@@ -86,11 +86,16 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
         def possible(i, j, value):
             return game_state.board.get(i, j) == SudokuBoard.empty \
                    and not TabooMove(i, j, value) in game_state.taboo_moves
-
+        
+        #filter out illegal moves AND taboo moves
         all_moves = [Move(i, j, value) for i in range(N) for j in range(N)
-                     for value in range(1, N+1) if possible(i, j, value)]
+                     for value in range(1, N+1) if possible(i, j, value) and value not in illegal_moves(i, j, game_state)]
+
+        # propose a valid move arbitrarily at first, then try to optimize it with minimax
         move = random.choice(all_moves)
         self.propose_move(move)
+
+        
         while True:
             time.sleep(0.2)
             print(illegal_moves(2, 2, game_state))
