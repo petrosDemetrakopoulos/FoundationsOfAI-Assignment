@@ -30,11 +30,11 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                     row.append(crn_cell)
             return row
 
-        def get_column_filled_values(column_index: int, game_state: GameState):
+        def get_column_filled_values(column_index: int, state: GameState):
             # returns non-empty values in column with index column_index 
             column = []
-            for i in range(game_state.board.N):
-                crn_cell = game_state.board.get(i, column_index)
+            for i in range(state.board.N):
+                crn_cell = state.board.get(i, column_index)
                 if crn_cell != 0: # 0 denotes an empty cell
                     column.append(crn_cell)
             return column
@@ -54,6 +54,11 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                     if crn_cell != 0:
                         rect.append(crn_cell)
             return rect
+
+        def illegal_moves(row: int, col: int, state:GameState):
+            # return a list of numbers that CANNOT be added on a given empty cell (row,col)
+            illegal = get_row_filled_values(row, game_state) + get_column_filled_values(col, state) + get_block_filled_values(row, col, state)
+            return list(set(illegal)) # easy way to remove duplicates
 
         def score(move: Move, state: GameState):
             # return the score that should be added to a player after the given move
@@ -88,10 +93,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
         self.propose_move(move)
         while True:
             time.sleep(0.2)
-            print("***")
-            print(get_row_filled_values(0, game_state))
-            print("***")
-            print(get_column_filled_values(0, game_state))
+            print(illegal_moves(2, 2, game_state))
             self.propose_move(random.choice(all_moves))
 
 
