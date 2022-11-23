@@ -57,7 +57,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
 
         def illegal_moves(row: int, col: int, state:GameState):
             # return a list of numbers that CANNOT be added on a given empty cell (row,col)
-            illegal = get_row_filled_values(row, game_state) + get_column_filled_values(col, state) + get_block_filled_values(row, col, state)
+            illegal = get_row_filled_values(row, state) + get_column_filled_values(col, state) + get_block_filled_values(row, col, state)
             return list(set(illegal)) # easy way to remove duplicates
 
         def score(move: Move, state: GameState):
@@ -67,7 +67,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             row = get_row_filled_values(move.i, state)
             col = get_column_filled_values(move.j, state)
             block = get_block_filled_values(move.i, move.j, state)
-            full_len = game_state.board.N - 1
+            full_len = state.board.N - 1
 
             # based onn the logic mentioned in the Assignment desctiption, we calculate score increase after the move
             if len(row) == full_len and len(col) == full_len and len(block) == full_len: # case where a row, a column and a block are completed after the move
