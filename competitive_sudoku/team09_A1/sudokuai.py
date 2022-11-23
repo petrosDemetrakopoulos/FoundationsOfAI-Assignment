@@ -82,6 +82,14 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                 return 1
             else:
                 return 0
+        
+        def get_empty_cells(state: GameState):
+            empty_cells = []
+            for i in range(len(state.board.squares)):
+                if state.board.squares[i] == 0: # empty cell
+                    empty_cells.append(state.board.f2rc(i))
+            return empty_cells
+
             
         def possible(i, j, value):
             return game_state.board.get(i, j) == SudokuBoard.empty \
@@ -95,10 +103,11 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
         move = random.choice(all_moves)
         self.propose_move(move)
 
-        
+
         while True:
             time.sleep(0.2)
-            print(illegal_moves(2, 2, game_state))
+            print("EMPTY CELLS")
+            print(get_empty_cells(game_state))
             self.propose_move(random.choice(all_moves))
 
 
