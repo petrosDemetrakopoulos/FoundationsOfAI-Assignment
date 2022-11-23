@@ -111,6 +111,13 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
 
         while True:
             time.sleep(0.2)
-            print("EMPTY CELLS")
-            print(get_empty_cells(game_state))
-            self.propose_move(random.choice(all_moves))
+            rndm_move = random.choice(all_moves)
+            print("--------------")
+            print("Empty cells: " + str(get_empty_cells(game_state)))
+            print("Score for selected move: " + str(score(rndm_move, game_state)))
+            print("Illegal moves for selected cell: " + str(illegal_moves(rndm_move.i, rndm_move.j, game_state)))
+            print("Block filled values for selected cell: " + str(get_block_filled_values(rndm_move.i, rndm_move.j, game_state)))
+            print("Row filled values for selected cell: " + str(get_row_filled_values(rndm_move.i, game_state)))
+            print("Column filled values for selected cell: " + str(get_column_filled_values(rndm_move.j, game_state)))
+            print("--------------")
+            self.propose_move(rndm_move)
