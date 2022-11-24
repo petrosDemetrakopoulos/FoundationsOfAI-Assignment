@@ -122,7 +122,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             if len(all_legal_moves) == 0:  # no available move, so game ends returning the current score
                 print("NO LEGAL MOVES")
                 if isMaximizingPlayer:
-                    return self.last_legal_max_move, crn_score + score_function(self.last_legal_max_move, state)
+                    return self.last_legal_max_move, crn_score + score_function(self.last_legal_max_move, state) #should still check if it is a taboo move
                 return self.last_legal_min_move, crn_score + score_function(self.last_legal_min_move, state)
 
             if isMaximizingPlayer:
