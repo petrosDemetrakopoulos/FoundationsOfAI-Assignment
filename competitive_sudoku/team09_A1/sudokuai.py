@@ -14,7 +14,8 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
     Sudoku AI that computes a move for a given sudoku configuration.
     """
     verbose = False  # a flag to print useful debug logs after each turn
-
+    last_legal_max_move = None
+    last_legal_min_move = None
     def __init__(self):
         super().__init__()
 
@@ -112,16 +113,17 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
     
             if len(empty_cells_coords) == 0:
                 # game end, all cells are filled
-                #print("EMPTY_CELLS = 0")
                 return None, crn_score
 
             # filter out illegal moves AND taboo moves from the empty_cells, these are all possible and legal moves
             all_legal_moves = [Move(coords[0], coords[1], value) for coords in empty_cells_coords for value in range(1, N+1)
                          if possible(coords[0], coords[1], value) and value not in illegal_moves(coords[0], coords[1], state)]
-
+            print("legal moves len: " + str(len(all_legal_moves)))
             if len(all_legal_moves) == 0:  # no available move, so game ends returning the current score
                 print("NO LEGAL MOVES")
-                return "None", crn_score
+                if isMaximizingPlayer:
+                    return self.last_legal_max_move, crn_score + score_function(self.last_legal_max_move, state)
+                return self.last_legal_min_move, crn_score + score_function(self.last_legal_min_move, state)
 
             if isMaximizingPlayer:
                 # initialize the crn_max_score with the minimum possible value supported by Python
@@ -139,6 +141,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                     if max_score > crn_max_score:
                         crn_max_score = max_score
                         opt_move = move
+                        self.last_legal_max_move = move
                 return opt_move, crn_max_score
             else:
                 crn_min_score = math.inf
@@ -154,18 +157,17 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                     if min_score < crn_min_score:
                         crn_min_score = min_score
                         opt_move = move
+                        self.last_legal_min_move = move
                 return opt_move, crn_min_score
 
         # filter out illegal moves AND taboo moves
-        all_moves = [Move(i, j, value) for i in range(N) for j in range(N)
+        all_legal_moves = [Move(i, j, value) for i in range(N) for j in range(N)
                     for value in range(1, N+1) if possible(i, j, value) and value not in illegal_moves(i, j, game_state)]
         # propose a valid move arbitrarily at first, then try to optimize it with minimax
-        move = random.choice(all_moves)
+        move = random.choice(all_legal_moves)
         self.propose_move(move)
 
         while True:
-            time.sleep(0.2)
-            rndm_move = random.choice(all_moves)
             if self.verbose:
                 print("--------------")
                 print("Empty cells: " + str(get_empty_cells(game_state)))
@@ -181,8 +183,6 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                       str(get_column_filled_values(rndm_move.j, game_state)))
                 print("--------------")
             best_move, score = minimax(game_state, True, 0)
-            print("Random move:")
-            print(rndm_move)
-            print("Minimax move:")
-            print(best_move)
+            print("returned move is: " + str(best_move))
             self.propose_move(best_move)
+            time.sleep(0.2)
