@@ -13,7 +13,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
     """
     Sudoku AI that computes a move for a given sudoku configuration.
     """
-    verbose = True  # a flag to print useful debug logs after each turn
+    verbose = False  # a flag to print useful debug logs after each turn
 
     def __init__(self):
         super().__init__()
@@ -23,11 +23,11 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
         N = game_state.board.N
         # helper functions
 
-        def get_row_filled_values(row_index: int, game_state: GameState):
+        def get_row_filled_values(row_index: int, state: GameState):
             # returns non-empty values in row with index row_index
             row = []
-            for i in range(game_state.board.N):
-                crn_cell = game_state.board.get(row_index, i)
+            for i in range(state.board.N):
+                crn_cell = state.board.get(row_index, i)
                 if crn_cell != 0:  # 0 denotes an empty cell
                     row.append(crn_cell)
             return row
@@ -61,7 +61,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             # return a list of numbers that CANNOT be added on a given empty cell (row,col)
             illegal = get_row_filled_values(row, state) + get_column_filled_values(
                 col, state) + get_block_filled_values(row, col, state)
-            return list(set(illegal))  # easy way to remove duplicates
+            return set(illegal)  # easy way to remove duplicates
 
         def score(move: Move, state: GameState):
             # return the score that should be added to a player after the given move
@@ -91,6 +91,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                 return 0
 
         def get_empty_cells(state: GameState):
+            # returns coordinates (as a tuple) of empty cells
             empty_cells = []
             for i in range(len(state.board.squares)):
                 if state.board.squares[i] == 0:  # empty cell
@@ -105,44 +106,60 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             empty_cells = 0
             empty_cells_coords = []
             # compute empty cells coordinates and count empty cells in the same loop
-            for i in range(len(state.board.board_height())):
-                for j in range(len(state.board.board_width())):
+            for i in range(state.board.board_height()):
+                for j in range(state.board.board_width()):
                     if state.board.get(i, j) == 0:
                         empty_cells += 1
                         empty_cells_coords.append((i, j))
+    
             if empty_cells == 0:
                 # game end, all cells are filled
                 return None, crn_score
 
             # filter out illegal moves AND taboo moves from the empty_cells, these are all possible and legal moves
-            all_moves = [Move(coords.i, coords.j, value) for coords in empty_cells_coords for value in range(1, N+1)
-                         if possible(coords.i, coords.j, value) and value not in illegal_moves(coords.i, coords.j, state)]
-            if len(all_moves) == 0:  # no available move, so game ends returning the current score
+            all_legal_moves = [Move(coords[0], coords[1], value) for coords in empty_cells_coords for value in range(1, N+1)
+                         if possible(coords[0], coords[1], value) and value not in illegal_moves(coords[0], coords[1], state)]
+
+            if len(all_legal_moves) == 0:  # no available move, so game ends returning the current score
                 return None, crn_score
 
             if isMaximizingPlayer:
                 # initialize the crn_max_score with the minimum possible value supported by Python
-                crn_max_score = -math.inf
+                crn_min_score = math.inf
                 # arbitrariliy initialize optimal move to be the optimal move (in the loop we find the real optimal move)
-                opt_move = all_moves[0]
+                opt_move = all_legal_moves[0]
                 for move in all_moves:
                     new_score = score(move, state)
                     crn_score += new_score
                     state.board.put(move.i, move.j, move.value)
                     # calling now minimax for minimizing player
-                    min_score = minimax(state, False, crn_score)
+                    opt_move, min_score = minimax(state, False, crn_score)
                     # clear move from the board to continue by checking other possible moves
                     state.board.put(move.i, move.j, 0)
-                    if min_score > crn_max_score:
-                        crn_max_score = min_score
+                    if min_score < crn_min_score:
+                        crn_min_score = min_score
+                        opt_move = move
+                return opt_move, crn_min_score
+            else:
+                crn_max_score = -math.inf
+                opt_move = all_legal_moves[0]
+                for move in all_moves:
+                    new_score = score(move, state)
+                    crn_score -= new_score
+                    state.board.put(move.i, move.j, move.value)
+                    # calling now minimax for maximizing player
+                    opt_move, max_score = minimax(state, True, crn_score)
+                    # clear move from the board to continue by checking other possible moves
+                    state.board.put(move.i, move.j, 0)
+                    if max_score > crn_max_score:
+                        crn_max_score = max_score
                         opt_move = move
                 return opt_move, crn_max_score
-            else:
-                
-            # filter out illegal moves AND taboo moves
-            all_moves = [Move(i, j, value) for i in range(N) for j in range(N)
-                        for value in range(1, N+1) if possible(i, j, value) and value not in illegal_moves(i, j, game_state)]
 
+
+        # filter out illegal moves AND taboo moves
+        all_moves = [Move(i, j, value) for i in range(N) for j in range(N)
+                    for value in range(1, N+1) if possible(i, j, value) and value not in illegal_moves(i, j, game_state)]
         # propose a valid move arbitrarily at first, then try to optimize it with minimax
         move = random.choice(all_moves)
         self.propose_move(move)
@@ -150,7 +167,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
         while True:
             time.sleep(0.2)
             rndm_move = random.choice(all_moves)
-            if verbose:
+            if self.verbose:
                 print("--------------")
                 print("Empty cells: " + str(get_empty_cells(game_state)))
                 print("Score for selected move: " +
@@ -164,4 +181,9 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                 print("Column filled values for selected cell: " +
                       str(get_column_filled_values(rndm_move.j, game_state)))
                 print("--------------")
+            best_move, score = minimax(game_state, True, 0)
+            print("Random move:")
+            print(rndm_move)
+            print("Minimax move:")
+            print(best_move)
             self.propose_move(rndm_move)
