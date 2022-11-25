@@ -70,7 +70,8 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             row = get_row_filled_values(move.i, state)
             col = get_column_filled_values(move.j, state)
             block = get_block_filled_values(move.i, move.j, state)
-            # N, excluding the cell under questiom (the cell we consider fo filling in)
+            # N, excluding the cell under question (the cell we consider fo filling in)
+            # we exclude it because scoreing function is called BEFORE the cell gets filled
             full_len = state.board.board_width() - 1
 
             # based onn the logic mentioned in the Assignment desctiption, we calculate score increase after the move
