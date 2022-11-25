@@ -204,4 +204,3 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
         print("returned move is: " + str(best_move))
         if best_move is not None:
             self.propose_move(best_move)
-        time.sleep(1)
