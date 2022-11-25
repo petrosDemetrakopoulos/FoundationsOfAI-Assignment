@@ -14,8 +14,6 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
     Sudoku AI that computes a move for a given sudoku configuration.
     """
     verbose = False  # a flag to print useful debug logs after each turn
-    last_legal_max_move = None
-    last_legal_min_move = None
     def __init__(self):
         super().__init__()
 
@@ -70,7 +68,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             row = get_row_filled_values(move.i, state)
             col = get_column_filled_values(move.j, state)
             block = get_block_filled_values(move.i, move.j, state)
-            full_len = state.board.board_width() - 1
+            full_len = state.board.board_width() - 1 # N, excluding the cell under questiom (the cell we consider fo filling in)
 
             # based onn the logic mentioned in the Assignment desctiption, we calculate score increase after the move
             # case where a row, a column and a block are completed after the move
@@ -119,11 +117,9 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             all_legal_moves = [Move(coords[0], coords[1], value) for coords in empty_cells_coords for value in range(1, N+1)
                          if possible(coords[0], coords[1], value) and value not in illegal_moves(coords[0], coords[1], state)]
             print("legal moves len: " + str(len(all_legal_moves)))
-            if len(all_legal_moves) == 0:  # no available move, so game ends returning the current score
+            if len(all_legal_moves) == 0:  # no available legal move, so returning the latest legal move, probably triggered due to call of the minimax() after all cells have been fileld in the the original board
                 print("NO LEGAL MOVES")
-                if isMaximizingPlayer:
-                    return self.last_legal_max_move, crn_score + score_function(self.last_legal_max_move, state) #should still check if it is a taboo move
-                return self.last_legal_min_move, crn_score + score_function(self.last_legal_min_move, state)
+                return None, crn_score
 
             if isMaximizingPlayer:
                 # initialize the crn_max_score with the minimum possible value supported by Python
@@ -141,7 +137,6 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                     if max_score > crn_max_score:
                         crn_max_score = max_score
                         opt_move = move
-                        self.last_legal_max_move = move
                 return opt_move, crn_max_score
             else:
                 # initialize the crn_min_score with the maximum possible value supported by Python
@@ -159,7 +154,6 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                     if min_score < crn_min_score:
                         crn_min_score = min_score
                         opt_move = move
-                        self.last_legal_min_move = move
                 return opt_move, crn_min_score
 
         # filter out illegal moves AND taboo moves
@@ -186,5 +180,6 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                 print("--------------")
             best_move, score = minimax(game_state, True, 0)
             print("returned move is: " + str(best_move))
-            self.propose_move(best_move)
+            if best_move is not None:
+                self.propose_move(best_move)
             time.sleep(0.2)
