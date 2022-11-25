@@ -8,7 +8,6 @@ import math
 from competitive_sudoku.sudoku import GameState, Move, SudokuBoard, TabooMove
 import competitive_sudoku.sudokuai
 
-
 class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
     """
     Sudoku AI that computes a move for a given sudoku configuration.
@@ -28,7 +27,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             row = []
             for i in range(state.board.N):
                 crn_cell = state.board.get(row_index, i)
-                if crn_cell != 0:  # 0 denotes an empty cell
+                if crn_cell != SudokuBoard.empty:
                     row.append(crn_cell)
             return row
 
@@ -37,7 +36,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             column = []
             for i in range(state.board.N):
                 crn_cell = state.board.get(i, column_index)
-                if crn_cell != 0:  # 0 denotes an empty cell
+                if crn_cell != SudokuBoard.empty:
                     column.append(crn_cell)
             return column
 
@@ -46,19 +45,20 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             # (row, column) belongs to
             first_row = math.floor(row / state.board.m) * state.board.m
             # a smart way to find the first row of the rectangular region where the cell belongs to,
-            # is to round the row / m fraction to the lower closest integer and then multiply by m
+            # is to round the row / m fraction to the lower closest integer (floor) and then multiply by m
             # we do the same to distinguish the first column of the rectangular region in question
             first_column = math.floor(column / state.board.n) * state.board.n
             rect = []
             for r in range(first_row, first_row + state.board.m):
                 for c in range(first_column, first_column + state.board.n):
                     crn_cell = state.board.get(r, c)
-                    if crn_cell != 0:
+                    if crn_cell != SudokuBoard.empty:
                         rect.append(crn_cell)
             return rect
 
         def illegal_moves(row: int, col: int, state: GameState):
             # return a list of numbers that CANNOT be added on a given empty cell (row,col)
+            # these numbers are illegal and the cannot be set to the given cell they already exist in at least 1 out of the cell row, column or block
             illegal = get_row_filled_values(row, state) + get_column_filled_values(
                 col, state) + get_block_filled_values(row, col, state)
             return set(illegal)  # easy way to remove duplicates
@@ -170,7 +170,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                     # calling now minimax for maximizing player
                     opt_move, min_score = minimax(state, True, crn_score)
                     # clear move from the board to continue by checking other possible moves
-                    state.board.put(move.i, move.j, 0)
+                    state.board.put(move.i, move.j, SudokuBoard.empty)
                     if min_score < crn_min_score:
                         crn_min_score = min_score
                         opt_move = move
