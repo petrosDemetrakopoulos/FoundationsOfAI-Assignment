@@ -14,6 +14,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
     Sudoku AI that computes a move for a given sudoku configuration.
     """
     verbose = False  # a flag to print useful debug logs after each turn
+
     def __init__(self):
         super().__init__()
 
@@ -68,7 +69,8 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             row = get_row_filled_values(move.i, state)
             col = get_column_filled_values(move.j, state)
             block = get_block_filled_values(move.i, move.j, state)
-            full_len = state.board.board_width() - 1 # N, excluding the cell under questiom (the cell we consider fo filling in)
+            # N, excluding the cell under questiom (the cell we consider fo filling in)
+            full_len = state.board.board_width() - 1
 
             # based onn the logic mentioned in the Assignment desctiption, we calculate score increase after the move
             # case where a row, a column and a block are completed after the move
@@ -108,14 +110,26 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                 for j in range(state.board.board_width()):
                     if state.board.get(i, j) == SudokuBoard.empty:
                         empty_cells_coords.append((i, j))
-    
+
             if len(empty_cells_coords) == 0:
                 # game end, all cells are filled
                 return None, crn_score
 
+            # prune any cell that we have no info about it (block, row and column containing it are empty)
+            # still need to handle the issue with the empty board there
+            # probably a simple iff will do
+            cells_we_have_info_for = []
+            for cell in empty_cells_coords: 
+                cell_row = cell[0]
+                cell_col = cell[1]
+                if not (len(get_row_filled_values(cell_row, state)) == 0 and
+                        len(get_column_filled_values(cell_col, state)) == 0 and
+                        len(get_block_filled_values(cell_row, cell_col, state)) == 0):
+                    cells_we_have_info_for.append(cell)
+
             # filter out illegal moves AND taboo moves from the empty_cells, these are all possible and legal moves
-            all_legal_moves = [Move(coords[0], coords[1], value) for coords in empty_cells_coords for value in range(1, N+1)
-                         if possible(coords[0], coords[1], value) and value not in illegal_moves(coords[0], coords[1], state)]
+            all_legal_moves = [Move(coords[0], coords[1], value) for coords in cells_we_have_info_for for value in range(1, N+1)
+                               if possible(coords[0], coords[1], value) and value not in illegal_moves(coords[0], coords[1], state)]
             print("legal moves len: " + str(len(all_legal_moves)))
             if len(all_legal_moves) == 0:  # no available legal move, so returning the latest legal move, probably triggered due to call of the minimax() after all cells have been fileld in the the original board
                 print("NO LEGAL MOVES")
@@ -158,7 +172,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
 
         # filter out illegal moves AND taboo moves
         all_legal_moves = [Move(i, j, value) for i in range(N) for j in range(N)
-                    for value in range(1, N+1) if possible(i, j, value) and value not in illegal_moves(i, j, game_state)]
+                           for value in range(1, N+1) if possible(i, j, value) and value not in illegal_moves(i, j, game_state)]
         # propose a valid move arbitrarily at first, then try to optimize it with minimax and propose new moves as we still have time to do so
         move = random.choice(all_legal_moves)
         self.propose_move(move)
