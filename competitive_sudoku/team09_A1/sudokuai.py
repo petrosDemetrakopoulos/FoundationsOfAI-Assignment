@@ -128,7 +128,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             if isMaximizingPlayer:
                 # initialize the crn_max_score with the minimum possible value supported by Python
                 crn_max_score = -math.inf
-                # arbitrariliy initialize optimal move to be the optimal move (in the loop we find the real optimal move)
+                # arbitrariliy initialize optimal move to be the first legal move (in the loop we find the real optimal move)
                 opt_move = all_legal_moves[0]
                 for move in all_legal_moves:
                     new_score = score_function(move, state)
@@ -144,7 +144,9 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                         self.last_legal_max_move = move
                 return opt_move, crn_max_score
             else:
+                # initialize the crn_min_score with the maximum possible value supported by Python
                 crn_min_score = math.inf
+                # arbitrariliy initialize optimal move to be the first legal move (in the loop we find the real optimal move)
                 opt_move = all_legal_moves[0]
                 for move in all_legal_moves:
                     new_score = score_function(move, state)
@@ -163,7 +165,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
         # filter out illegal moves AND taboo moves
         all_legal_moves = [Move(i, j, value) for i in range(N) for j in range(N)
                     for value in range(1, N+1) if possible(i, j, value) and value not in illegal_moves(i, j, game_state)]
-        # propose a valid move arbitrarily at first, then try to optimize it with minimax
+        # propose a valid move arbitrarily at first, then try to optimize it with minimax and propose new moves as we still have time to do so
         move = random.choice(all_legal_moves)
         self.propose_move(move)
 
