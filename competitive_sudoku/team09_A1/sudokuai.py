@@ -18,11 +18,10 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
     def __init__(self):
         super().__init__()
 
-    # N.B. This is a very naive implementation.
     def compute_best_move(self, game_state: GameState) -> None:
         N = game_state.board.N
-        # helper functions
 
+        # helper functions
         def get_row_filled_values(row_index: int, state: GameState):
             # returns non-empty values in row with index row_index
             row = []
@@ -133,7 +132,6 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                 # in case of an empty board, we assign empty_cells_coords to cells_we_have_info_for
                 # otherwise the pruning would prune all cells
                 cells_we_have_info_for = empty_cells_coords[:]
-
             # filter out illegal moves AND taboo moves from the empty_cells, these are all possible and legal moves
             all_legal_moves = [Move(coords[0], coords[1], value) for coords in cells_we_have_info_for for value in range(1, N+1)
                                if possible(coords[0], coords[1], value) and value not in illegal_moves(coords[0], coords[1], state)]
@@ -184,26 +182,26 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                            for value in range(1, N+1) if possible(i, j, value) and value not in illegal_moves(i, j, game_state)]
         # propose a valid move arbitrarily at first, then try to optimize it with minimax and propose new moves as we still have time to do so
         move = random.choice(all_legal_moves)
+        print("random move is: " + str(move))
         self.propose_move(move)
 
-        while True:
-            if self.verbose:
-                # print statements for debug purposes
-                print("--------------")
-                print("Empty cells: " + str(get_empty_cells(game_state)))
-                print("Score for selected move: " +
-                      str(score(rndm_move, game_state)))
-                print("Illegal moves for selected cell: " +
-                      str(illegal_moves(rndm_move.i, rndm_move.j, game_state)))
-                print("Block filled values for selected cell: " +
-                      str(get_block_filled_values(rndm_move.i, rndm_move.j, game_state)))
-                print("Row filled values for selected cell: " +
-                      str(get_row_filled_values(rndm_move.i, game_state)))
-                print("Column filled values for selected cell: " +
-                      str(get_column_filled_values(rndm_move.j, game_state)))
-                print("--------------")
-            best_move, score = minimax(game_state, True, 0)
-            print("returned move is: " + str(best_move))
-            if best_move is not None:
-                self.propose_move(best_move)
-            time.sleep(1)
+        if self.verbose:
+            # print statements for debug purposes
+            print("--------------")
+            print("Empty cells: " + str(get_empty_cells(game_state)))
+            print("Score for selected move: " +
+                str(score_function(move, game_state)))
+            print("Illegal moves for selected cell: " +
+                str(illegal_moves(move.i, move.j, game_state)))
+            print("Block filled values for selected cell: " +
+                str(get_block_filled_values(move.i, move.j, game_state)))
+            print("Row filled values for selected cell: " +
+                str(get_row_filled_values(move.i, game_state)))
+            print("Column filled values for selected cell: " +
+                str(get_column_filled_values(move.j, game_state)))
+            print("--------------")
+        best_move, score = minimax(game_state, True, 0)
+        print("returned move is: " + str(best_move))
+        if best_move is not None:
+            self.propose_move(best_move)
+        time.sleep(1)
