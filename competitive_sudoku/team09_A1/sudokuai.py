@@ -8,6 +8,7 @@ import math
 from competitive_sudoku.sudoku import GameState, Move, SudokuBoard, TabooMove
 import competitive_sudoku.sudokuai
 
+
 class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
     """
     Sudoku AI that computes a move for a given sudoku configuration.
@@ -92,7 +93,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                 return 0
 
         def get_empty_cells(state: GameState):
-            # returns coordinates (as a tuple) of empty cells
+            # returns coordinates of empty cells as a tuple (row, column)
             empty_cells = []
             for i in range(len(state.board.squares)):
                 if state.board.squares[i] == 0:  # empty cell
@@ -116,10 +117,11 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                 return None, crn_score
 
             # prune any cell that we have no info about it (block, row and column containing it are empty)
+            # the reasoning behind it is that it is a bit naive to fill in cells for which we have not information and most probably there will be better options
             # this technique significantly reduces tree size and offers performance advantage
             cells_we_have_info_for = []
             if not state.board.empty:
-                for cell in empty_cells_coords: 
+                for cell in empty_cells_coords:
                     cell_row = cell[0]
                     cell_col = cell[1]
                     if not (len(get_row_filled_values(cell_row, state)) == 0 and
@@ -129,14 +131,14 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             else:
                 # in case of an empty board, we assign empty_cells_coords to cells_we_have_info_for
                 # otherwise the pruning would prune all cells
-                cells_we_have_info_for = empty_cells_coords[:] 
+                cells_we_have_info_for = empty_cells_coords[:]
 
             # filter out illegal moves AND taboo moves from the empty_cells, these are all possible and legal moves
             all_legal_moves = [Move(coords[0], coords[1], value) for coords in cells_we_have_info_for for value in range(1, N+1)
                                if possible(coords[0], coords[1], value) and value not in illegal_moves(coords[0], coords[1], state)]
-            
+
             # no available legal move, probably triggered due to call of the minimax() after all cells have been fileld in the the original board
-            if len(all_legal_moves) == 0:  
+            if len(all_legal_moves) == 0:
                 if self.verbose:
                     print("No legal moves left")
                 return None, crn_score
