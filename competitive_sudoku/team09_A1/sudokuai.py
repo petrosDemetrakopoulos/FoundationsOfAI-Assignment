@@ -116,16 +116,20 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                 return None, crn_score
 
             # prune any cell that we have no info about it (block, row and column containing it are empty)
-            # still need to handle the issue with the empty board there
-            # probably a simple iff will do
+            # this technique significantly reduces tree size and offers performance advantage
             cells_we_have_info_for = []
-            for cell in empty_cells_coords: 
-                cell_row = cell[0]
-                cell_col = cell[1]
-                if not (len(get_row_filled_values(cell_row, state)) == 0 and
-                        len(get_column_filled_values(cell_col, state)) == 0 and
-                        len(get_block_filled_values(cell_row, cell_col, state)) == 0):
-                    cells_we_have_info_for.append(cell)
+            if not state.board.empty:
+                for cell in empty_cells_coords: 
+                    cell_row = cell[0]
+                    cell_col = cell[1]
+                    if not (len(get_row_filled_values(cell_row, state)) == 0 and
+                            len(get_column_filled_values(cell_col, state)) == 0 and
+                            len(get_block_filled_values(cell_row, cell_col, state)) == 0):
+                        cells_we_have_info_for.append(cell)
+            else:
+                # in case of an empty board, we assign empty_cells_coords to cells_we_have_info_for
+                # otherwise the pruning would prune all cells
+                cells_we_have_info_for = empty_cells_coords[:] 
 
             # filter out illegal moves AND taboo moves from the empty_cells, these are all possible and legal moves
             all_legal_moves = [Move(coords[0], coords[1], value) for coords in cells_we_have_info_for for value in range(1, N+1)
