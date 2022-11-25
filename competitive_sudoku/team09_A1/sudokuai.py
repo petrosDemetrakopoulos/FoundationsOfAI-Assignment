@@ -134,9 +134,11 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             # filter out illegal moves AND taboo moves from the empty_cells, these are all possible and legal moves
             all_legal_moves = [Move(coords[0], coords[1], value) for coords in cells_we_have_info_for for value in range(1, N+1)
                                if possible(coords[0], coords[1], value) and value not in illegal_moves(coords[0], coords[1], state)]
-            print("legal moves len: " + str(len(all_legal_moves)))
-            if len(all_legal_moves) == 0:  # no available legal move, so returning the latest legal move, probably triggered due to call of the minimax() after all cells have been fileld in the the original board
-                print("NO LEGAL MOVES")
+            
+            # no available legal move, probably triggered due to call of the minimax() after all cells have been fileld in the the original board
+            if len(all_legal_moves) == 0:  
+                if self.verbose:
+                    print("No legal moves left")
                 return None, crn_score
 
             if isMaximizingPlayer:
@@ -183,6 +185,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
 
         while True:
             if self.verbose:
+                # print statements for debug purposes
                 print("--------------")
                 print("Empty cells: " + str(get_empty_cells(game_state)))
                 print("Score for selected move: " +
