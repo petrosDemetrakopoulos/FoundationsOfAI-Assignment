@@ -22,53 +22,53 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
         N = game_state.board.N
 
         # helper functions
-        def get_row_filled_values(row_index: int, state: GameState):
+        def get_filled_row_values(row_index: int, state: GameState):
             # returns non-empty values in row with index row_index
-            row = []
+            filled_values = []
             for i in range(state.board.N):
-                crn_cell = state.board.get(row_index, i)
-                if crn_cell != SudokuBoard.empty:
-                    row.append(crn_cell)
-            return row
+                cur_cell = state.board.get(row_index, i)
+                if cur_cell != SudokuBoard.empty:
+                    filled_values.append(cur_cell)
+            return filled_values
 
-        def get_column_filled_values(column_index: int, state: GameState):
+        def get_filled_column_values(column_index: int, state: GameState):
             # returns non-empty values in column with index column_index
-            column = []
+            filled_values = []
             for i in range(state.board.N):
-                crn_cell = state.board.get(i, column_index)
-                if crn_cell != SudokuBoard.empty:
-                    column.append(crn_cell)
-            return column
+                cur_cell = state.board.get(i, column_index)
+                if cur_cell != SudokuBoard.empty:
+                    filled_values.append(cur_cell)
+            return filled_values
 
-        def get_block_filled_values(row: int, column: int, state: GameState):
+        def get_filled_region_values(row_index: int, column_index: int, state: GameState):
             # return the non-empty values of the rectangular block that the cell with coordinates
             # (row, column) belongs to
-            first_row = math.floor(row / state.board.m) * state.board.m
+            first_row = math.floor(row_index / state.board.m) * state.board.m
             # a smart way to find the first row of the rectangular region where the cell belongs to,
             # is to round the row / m fraction to the lower closest integer (floor) and then multiply by m
             # we do the same to distinguish the first column of the rectangular region in question
-            first_column = math.floor(column / state.board.n) * state.board.n
-            rect = []
+            first_column = math.floor(column_index / state.board.n) * state.board.n
+            filled_values = []
             for r in range(first_row, first_row + state.board.m):
                 for c in range(first_column, first_column + state.board.n):
                     crn_cell = state.board.get(r, c)
                     if crn_cell != SudokuBoard.empty:
-                        rect.append(crn_cell)
-            return rect
+                        filled_values.append(crn_cell)
+            return filled_values
 
-        def illegal_moves(row: int, col: int, state: GameState):
+        def get_illegal_moves(row_index: int, col_index: int, state: GameState):
             # return a list of numbers that CANNOT be added on a given empty cell (row,col)
             # these numbers are illegal and the cannot be set to the given cell they already exist in at least 1 out of the cell row, column or block
-            illegal = get_row_filled_values(row, state) + get_column_filled_values(
-                col, state) + get_block_filled_values(row, col, state)
+            illegal = get_filled_row_values(row_index, state) + get_filled_column_values(
+                col_index, state) + get_filled_region_values(row_index, col_index, state)
             return set(illegal)  # easy way to remove duplicates
         
         def optimized_score_function(move: Move, state: GameState):
             # return the score that should be added to a player after the given move
             # if the player has no score increase after the move, this function returns 0
-            row = get_row_filled_values(move.i, state)
-            col = get_column_filled_values(move.j, state)
-            block = get_block_filled_values(move.i, move.j, state)
+            row = get_filled_row_values(move.i, state)
+            col = get_filled_column_values(move.j, state)
+            block = get_filled_region_values(move.i, move.j, state)
             # N, excluding the cell under question (the cell we consider fo filling in)
             # we exclude it because scoreing function is called BEFORE the cell gets filled
             full_len = state.board.board_width() - 1
@@ -104,17 +104,17 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                 return 0
 
         def score_function(move: Move, state: GameState):
-            # return the score that should be added to a player after the given move
-            # if the player has no score increase after the move, this function returns 0
-            row = get_row_filled_values(move.i, state)
-            col = get_column_filled_values(move.j, state)
-            block = get_block_filled_values(move.i, move.j, state)
+            # return the score that should be added to a player after the given legal_move
+            # if the player has no score increase after the legal_move, this function returns 0
+            row = get_filled_row_values(move.i, state)
+            col = get_filled_column_values(move.j, state)
+            block = get_filled_region_values(move.i, move.j, state)
             # N, excluding the cell under question (the cell we consider fo filling in)
             # we exclude it because scoreing function is called BEFORE the cell gets filled
             full_len = state.board.board_width() - 1
 
-            # based onn the logic mentioned in the Assignment desctiption, we calculate score increase after the move
-            # case where a row, a column and a block are completed after the move
+            # based onn the logic mentioned in the Assignment desctiption, we calculate score increase after the legal_move
+            # case where a row, a column and a block are completed after the legal_move
             if len(row) == full_len and len(col) == full_len and len(block) == full_len:
                 return 7
             # case where a row and a column is completed
@@ -140,91 +140,96 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                     empty_cells.append(state.board.f2rc(i))
             return empty_cells
 
-        def possible(i, j, value):
+        def is_possible(i, j, value):
             return game_state.board.get(i, j) == SudokuBoard.empty \
-                and not TabooMove(i, j, value) in game_state.taboo_moves
+                   and not TabooMove(i, j, value) in game_state.taboo_moves
 
-        def minimax(state: GameState, isMaximizingPlayer: bool, crn_score: int):
-            empty_cells_coords = []
+        def minimax(state: GameState, isMaximizingPlayer: bool, cur_score: int):
+            empty_cells = []
             # compute empty cells coordinates
             for i in range(state.board.board_height()):
                 for j in range(state.board.board_width()):
                     if state.board.get(i, j) == SudokuBoard.empty:
-                        empty_cells_coords.append((i, j))
+                        empty_cells.append((i, j))
 
-            if len(empty_cells_coords) == 0:
+            if len(empty_cells) == 0:
                 # game end, all cells are filled
-                return None, crn_score
+                return None, cur_score
 
-            # prune any cell that we have no info about it (block, row and column containing it are empty)
+            # prune any cell that we have no info about it (region, row and column containing it are empty)
             # the reasoning behind it is that it is a bit naive to fill in cells for which we have not information and most probably there will be better options
             # this technique significantly reduces tree size and offers performance advantage
-            cells_we_have_info_for = []
+            reward_cells = []
             if not state.board.empty:
-                for cell in empty_cells_coords:
-                     cell_row = cell[0]
-                     cell_col = cell[1]
-                     if not (len(get_row_filled_values(cell_row, state)) == 0 and
-                             len(get_column_filled_values(cell_col, state)) == 0 and
-                             len(get_block_filled_values(cell_row, cell_col, state)) == 0):
-                         cells_we_have_info_for.append(cell)
+                for cell in empty_cells:
+                    row_index = cell[0]
+                    cell_index = cell[1]
+                    if not (len(get_filled_row_values(row_index, state)) == 0 and
+                            len(get_filled_column_values(cell_index, state)) == 0 and
+                            len(get_filled_region_values(row_index, cell_index, state)) == 0):
+                        reward_cells.append(cell)
             else:
-                # in case of an empty board, we assign empty_cells_coords to cells_we_have_info_for
+                # in case of an empty board, we assign empty_cells to naive_cells
                 # otherwise the pruning would prune all cells
-                cells_we_have_info_for = empty_cells_coords[:]
-            
-            # filter out illegal moves AND taboo moves from the empty_cells, these are all possible and legal moves
-            all_legal_moves = [Move(coords[0], coords[1], value) for coords in cells_we_have_info_for for value in range(1, N+1)
-                               if possible(coords[0], coords[1], value) and value not in illegal_moves(coords[0], coords[1], state)]
+                # TODO: Is a value assignment instead of a reference assignment really needed here and why?
+                reward_cells = empty_cells[:]
+            # filter out illegal moves AND taboo moves from the empty_cells, these are all is_possible and legal moves
+            legal_moves = [Move(coords[0], coords[1], value) for coords in reward_cells for value in range(1, N + 1)
+                           if is_possible(coords[0], coords[1], value) and value not in get_illegal_moves(coords[0],
+                                                                                                          coords[1],
+                                                                                                          state)]
 
-            # no available legal move, probably triggered due to call of the minimax() after all cells have been fileld in the the original board
-            if len(all_legal_moves) == 0:
+            # no available legal legal_move, probably triggered due to call of the minimax() after all cells have been fileld in the the original board
+
+            if len(legal_moves) == 0:
                 if self.verbose:
                     print("No legal moves left")
-                return None, crn_score
+                return None, cur_score
 
             if isMaximizingPlayer:
-                # initialize the crn_max_score with the minimum possible value supported by Python
-                crn_max_score = -math.inf
-                # arbitrariliy initialize optimal move to be the first legal move (in the loop we find the real optimal move)
-                opt_move = all_legal_moves[0]
-                for move in all_legal_moves:
-                    new_score = optimized_score_function(move, state)
-                    crn_score += new_score
-                    state.board.put(move.i, move.j, move.value)
+                # initialize the cur_max_score with the minimum is_possible value supported by Python
+                cur_max_score = -math.inf
+                # arbitrariliy initialize optimal legal_move to be the first legal legal_move (in the loop we find the real optimal legal_move)
+                opt_move = legal_moves[0]
+                for legal_move in legal_moves:
+                    new_score = score_function(legal_move, state)
+                    cur_score += new_score
+                    state.board.put(legal_move.i, legal_move.j, legal_move.value)
                     # calling now minimax for minimizing player
-                    opt_move, max_score = minimax(state, False, crn_score)
-                    # clear move from the board to continue by checking other possible moves
-                    state.board.put(move.i, move.j, 0)
-                    if max_score > crn_max_score:
-                        crn_max_score = max_score
-                        opt_move = move
-                return opt_move, crn_max_score
+                    opt_move, max_score = minimax(state, False, cur_score)
+                    # clear legal_move from the board to continue by checking other is_possible moves
+                    # TODO: Pass a copy of the game state object that contains the proposed move to minimax() instead of adding and removing the move?
+                    state.board.put(legal_move.i, legal_move.j, SudokuBoard.empty)
+                    if max_score > cur_max_score:
+                        cur_max_score = max_score
+                        opt_move = legal_move
+                return opt_move, cur_max_score
             else:
-                # initialize the crn_min_score with the maximum possible value supported by Python
-                crn_min_score = math.inf
-                # arbitrariliy initialize optimal move to be the first legal move (in the loop we find the real optimal move)
-                opt_move = all_legal_moves[0]
-                for move in all_legal_moves:
-                    new_score = optimized_score_function(move, state)
-                    crn_score -= new_score
-                    state.board.put(move.i, move.j, move.value)
+                # initialize the cur_min_score with the maximum is_possible value supported by Python
+                cur_min_score = math.inf
+                # arbitrariliy initialize optimal legal_move to be the first legal legal_move (in the loop we find the real optimal legal_move)
+                opt_move = legal_moves[0]
+                for legal_move in legal_moves:
+                    new_score = score_function(legal_move, state)
+                    cur_score -= new_score
+                    state.board.put(legal_move.i, legal_move.j, legal_move.value)
                     # calling now minimax for maximizing player
-                    opt_move, min_score = minimax(state, True, crn_score)
-                    # clear move from the board to continue by checking other possible moves
-                    state.board.put(move.i, move.j, SudokuBoard.empty)
-                    if min_score < crn_min_score:
-                        crn_min_score = min_score
-                        opt_move = move
-                return opt_move, crn_min_score
+                    opt_move, min_score = minimax(state, True, cur_score)
+                    # clear legal_move from the board to continue by checking other is_possible moves
+                    # TODO: Pass a copy of the game state object that contains the proposed move to minimax() instead of adding and removing the move?
+                    state.board.put(legal_move.i, legal_move.j, SudokuBoard.empty)
+                    if min_score < cur_min_score:
+                        cur_min_score = min_score
+                        opt_move = legal_move
+                return opt_move, cur_min_score
 
         # filter out illegal moves AND taboo moves
-        all_legal_moves = [Move(i, j, value) for i in range(N) for j in range(N)
-                           for value in range(1, N+1) if possible(i, j, value) and value not in illegal_moves(i, j, game_state)]
-        
-
-        # propose a valid move arbitrarily at first, then try to optimize it with minimax and propose new moves as we still have time to do so
-        move = random.choice(all_legal_moves)
+        legal_moves = [Move(i, j, value) for i in range(N) for j in range(N)
+                       for value in range(1, N + 1) if is_possible(i, j, value) and value
+                       not in get_illegal_moves(i, j, game_state)]
+        # propose a valid legal_move arbitrarily at first, then try to optimize it with minimax and propose new moves as we still have time to do so
+        move = random.choice(legal_moves)
+        print("random legal_move is: " + str(move))
         self.propose_move(move)
 
         if self.verbose:
@@ -232,18 +237,18 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             print("--------------")
             print("Random move proposed: " + str(move))
             print("Empty cells: " + str(get_empty_cells(game_state)))
-            print("Score for selected move: " +
-                str(optimized_score_function(move, game_state)))
+            print("Score for selected legal_move: " +
+                  str(score_function(move, game_state)))
             print("Illegal moves for selected cell: " +
-                str(illegal_moves(move.i, move.j, game_state)))
+                  str(get_illegal_moves(move.i, move.j, game_state)))
             print("Block filled values for selected cell: " +
-                str(get_block_filled_values(move.i, move.j, game_state)))
+                  str(get_filled_region_values(move.i, move.j, game_state)))
             print("Row filled values for selected cell: " +
-                str(get_row_filled_values(move.i, game_state)))
+                  str(get_filled_row_values(move.i, game_state)))
             print("Column filled values for selected cell: " +
-                str(get_column_filled_values(move.j, game_state)))
+                  str(get_filled_column_values(move.j, game_state)))
             print("--------------")
         best_move, score = minimax(game_state, True, 0)
-        print("returned move is: " + str(best_move))
+        print("returned legal_move is: " + str(best_move))
         if best_move is not None:
             self.propose_move(best_move)
