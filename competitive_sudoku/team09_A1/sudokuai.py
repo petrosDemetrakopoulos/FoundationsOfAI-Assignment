@@ -144,7 +144,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             return game_state.board.get(i, j) == SudokuBoard.empty \
                    and not TabooMove(i, j, value) in game_state.taboo_moves
 
-        def minimax(state: GameState, isMaximizingPlayer: bool, cur_score: int):
+        def minimax(state: GameState, alpha: float, beta: float, is_maximizing_player: bool, cur_score: int):
             empty_cells = []
             # compute empty cells coordinates
             for i in range(state.board.board_height()):
@@ -186,7 +186,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                     print("No legal moves left")
                 return None, cur_score
 
-            if isMaximizingPlayer:
+            if is_maximizing_player:
                 # initialize the cur_max_score with the minimum is_possible value supported by Python
                 cur_max_score = -math.inf
                 # arbitrariliy initialize optimal legal_move to be the first legal legal_move (in the loop we find the real optimal legal_move)
@@ -196,13 +196,19 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                     cur_score += new_score
                     state.board.put(legal_move.i, legal_move.j, legal_move.value)
                     # calling now minimax for minimizing player
-                    opt_move, max_score = minimax(state, False, cur_score)
+                    opt_move, max_score = minimax(state, alpha, beta, False, cur_score)
                     # clear legal_move from the board to continue by checking other is_possible moves
                     # TODO: Pass a copy of the game state object that contains the proposed move to minimax() instead of adding and removing the move?
                     state.board.put(legal_move.i, legal_move.j, SudokuBoard.empty)
                     if max_score > cur_max_score:
                         cur_max_score = max_score
                         opt_move = legal_move
+
+                    # alpha-beta pruning
+                    alpha = max(alpha, max_score)
+                    if beta <= alpha:
+                        break
+
                 return opt_move, cur_max_score
             else:
                 # initialize the cur_min_score with the maximum is_possible value supported by Python
@@ -214,13 +220,19 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                     cur_score -= new_score
                     state.board.put(legal_move.i, legal_move.j, legal_move.value)
                     # calling now minimax for maximizing player
-                    opt_move, min_score = minimax(state, True, cur_score)
+                    opt_move, min_score = minimax(state, alpha, beta, True, cur_score)
                     # clear legal_move from the board to continue by checking other is_possible moves
                     # TODO: Pass a copy of the game state object that contains the proposed move to minimax() instead of adding and removing the move?
                     state.board.put(legal_move.i, legal_move.j, SudokuBoard.empty)
                     if min_score < cur_min_score:
                         cur_min_score = min_score
                         opt_move = legal_move
+
+                    # alpha-beta pruning
+                    beta = min(beta, min_score)
+                    if beta <= alpha:
+                        break
+
                 return opt_move, cur_min_score
 
         # filter out illegal moves AND taboo moves
@@ -248,7 +260,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             print("Column filled values for selected cell: " +
                   str(get_filled_column_values(move.j, game_state)))
             print("--------------")
-        best_move, score = minimax(game_state, True, 0)
+        best_move, score = minimax(game_state, -math.inf, math.inf, True, 0)
         print("returned legal_move is: " + str(best_move))
         if best_move is not None:
             self.propose_move(best_move)
