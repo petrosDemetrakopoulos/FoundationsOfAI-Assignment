@@ -113,7 +113,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             # N, excluding the cell under question (the cell we consider fo filling in)
             # we exclude it because scoreing function is called BEFORE the cell gets filled
             full_len = state.board.N - 1
-
+            
             # based onn the logic mentioned in the Assignment desctiption, we calculate score increase after the legal_move
             # case where a row, a column and a block are completed after the legal_move
             if len(row) == full_len and len(col) == full_len and len(block) == full_len:
@@ -148,7 +148,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
         def estimate_depth(legal_moves_len: int):
             # c is a "conservativeness" factor
             # we empirically figured out that a value that works pretty well for c is 1.7
-            c = 1.7
+            c = 1.8
             return int(c**(math.log(len(game_state.moves))))
 
         def minimax(state: GameState,depth: int, alpha: float, beta: float, is_maximizing_player: bool, cur_score: int):
@@ -192,8 +192,6 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                 return None, cur_score
 
             estimated_depth = estimate_depth(len(legal_moves))
-            #print("depth: " + str(depth))
-            #print("estimated depth: " + str(estimated_depth))
             if depth > estimated_depth:
                 return None, cur_score
 
@@ -253,9 +251,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
         move = random.choice(legal_moves)
         print("random legal_move is: " + str(move))
         self.propose_move(move)
-        f = open("random_proposed.txt", "a")
-        f.write("RND \n")
-        f.close()
+
         if self.verbose:
             # print statements for debug purposes
             print("--------------")
@@ -277,9 +273,6 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
         print("returned legal_move is: " + str(best_move))
         if best_move is not None:
             self.propose_move(best_move)
-            f = open("minimax_proposed.txt", "a")
-            f.write("MINIMAX \n")
-            f.close()
 
 # DERIVE A FORMULA PROVIDING DEPTH INVERSELY PROPORTIONATE TO AVAILABLE LEGAL MOVES
 # THIS IS BECAUSE WHEN WE HAVE MORE LEGAL MOVES IT TAKES MORE TIME TO REACH A LEAF STATE
