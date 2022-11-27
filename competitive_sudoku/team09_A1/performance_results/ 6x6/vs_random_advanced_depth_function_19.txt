@@ -48,4 +48,4 @@ P2
 P1
 P1
 P1
-74% WIN RATE
+74% WIN RATE  c = 1.7
