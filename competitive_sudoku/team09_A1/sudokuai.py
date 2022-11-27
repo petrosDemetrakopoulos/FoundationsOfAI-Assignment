@@ -111,7 +111,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             block = get_filled_region_values(move.i, move.j, state)
             # N, excluding the cell under question (the cell we consider fo filling in)
             # we exclude it because scoreing function is called BEFORE the cell gets filled
-            full_len = state.board.board_width() - 1
+            full_len = state.board.N - 1
 
             # based onn the logic mentioned in the Assignment desctiption, we calculate score increase after the legal_move
             # case where a row, a column and a block are completed after the legal_move
@@ -153,7 +153,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                         empty_cells.append((i, j))
 
             if len(empty_cells) == 0:
-                # game end, all cells are filled
+                # game end, all cells are filled, practically reached a leaf node
                 return None, cur_score
 
             # prune any cell that we have no info about it (region, row and column containing it are empty)
@@ -169,10 +169,9 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                             len(get_filled_region_values(row_index, cell_index, state)) == 0):
                         reward_cells.append(cell)
             else:
-                # in case of an empty board, we assign empty_cells to naive_cells
+                # in case of an empty board, we assign empty_cells to reward_cells
                 # otherwise the pruning would prune all cells
-                # TODO: Is a value assignment instead of a reference assignment really needed here and why?
-                reward_cells = empty_cells[:]
+                reward_cells = empty_cells
             # filter out illegal moves AND taboo moves from the empty_cells, these are all is_possible and legal moves
             legal_moves = [Move(coords[0], coords[1], value) for coords in reward_cells for value in range(1, N + 1)
                            if is_possible(coords[0], coords[1], value) and value not in get_illegal_moves(coords[0],
@@ -205,7 +204,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                         opt_move = legal_move
 
                     # alpha-beta pruning
-                    alpha = max(alpha, max_score)
+                    alpha = max(alpha, cur_max_score)
                     if beta <= alpha:
                         break
 
@@ -229,7 +228,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                         opt_move = legal_move
 
                     # alpha-beta pruning
-                    beta = min(beta, min_score)
+                    beta = min(beta, cur_min_score)
                     if beta <= alpha:
                         break
 
