@@ -95,7 +95,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             return game_state.board.get(i, j) == SudokuBoard.empty \
                 and not TabooMove(i, j, value) in game_state.taboo_moves
 
-        def estimate_depth(legal_moves_len: int):
+        def estimate_depth_limit(legal_moves_len: int):
             # c is a "conservativeness" factor
             # we empirically figured out that a value that works pretty well for c is 1.8
             # we raise this constant to the logarith of the number of moves that have already been played
@@ -132,11 +132,13 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                 # otherwise the pruning would prune all cells
                 reward_cells = empty_cells
 
-            # filter out illegal moves AND taboo moves from the empty_cells, these are all possible and legal moves
-            legal_moves = [Move(coords[0], coords[1], value) for coords in reward_cells for value in range(1, N + 1)
-                           if possible(coords[0], coords[1], value) and value not in get_illegal_moves(coords[0],
-                                                                                                       coords[1],
-                                                                                                       state)]
+            # filter out illegal moves AND taboo moves from the empty_cells, 
+            # the resulting list contains all possible and legal moves
+            legal_moves = []
+            for coords in reward_cells:
+                for value in range(1, N + 1):
+                    if possible(coords[0], coords[1], value) and value not in get_illegal_moves(coords[0],coords[1],state):
+                        legal_moves.append(Move(coords[0], coords[1], value))
 
             # no available legal_move, probably triggered due to call of the minimax() after all cells have been fileld in the the original board
             if len(legal_moves) == 0:
@@ -144,6 +146,8 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                     print("No legal moves left")
                 return None, cur_score
 
+            # estimate a maximum depth we are willing to search up to
+            # this maximum depth is a function of the length of the legal moves. more on it on the report
             estimated_depth_limit = estimate_depth_limit(len(legal_moves))
             if depth > estimated_depth_limit:
                 return None, cur_score
@@ -200,9 +204,13 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                 return opt_move, cur_min_score
 
         # filter out illegal moves AND taboo moves
-        legal_moves = [Move(i, j, value) for i in range(N) for j in range(N)
-                       for value in range(1, N + 1) if possible(i, j, value) and value
-                       not in get_illegal_moves(i, j, game_state)]
+        legal_moves = []
+        for i in range(N):
+            for j in range(N):
+                for value in range(1, N + 1):
+                    if possible(i, j, value) and value not in get_illegal_moves(i, j, game_state):
+                       legal_moves.append(Move(i, j, value))
+
         # propose a valid legal_move arbitrarily at first, 
         # then try to optimize it with minimax and propose new moves as we still have time to do so
         move = random.choice(legal_moves)
