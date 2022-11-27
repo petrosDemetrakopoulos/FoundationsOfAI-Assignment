@@ -145,7 +145,10 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             return game_state.board.get(i, j) == SudokuBoard.empty \
                    and not TabooMove(i, j, value) in game_state.taboo_moves
 
-        def minimax(state: GameState, alpha: float, beta: float, is_maximizing_player: bool, cur_score: int):
+        def estimate_depth(legal_moves_len: int):
+            return int(1.7**(math.log(len(game_state.moves))))
+
+        def minimax(state: GameState,depth: int, alpha: float, beta: float, is_maximizing_player: bool, cur_score: int):
             empty_cells = []
             # compute empty cells coordinates
             for i in range(state.board.N):
@@ -180,10 +183,15 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                                                                                                           state)]
 
             # no available legal_move, probably triggered due to call of the minimax() after all cells have been fileld in the the original board
-
             if len(legal_moves) == 0:
                 if self.verbose:
                     print("No legal moves left")
+                return None, cur_score
+
+            estimated_depth = estimate_depth(len(legal_moves))
+            #print("depth: " + str(depth))
+            #print("estimated depth: " + str(estimated_depth))
+            if depth > estimated_depth:
                 return None, cur_score
 
             if is_maximizing_player:
@@ -196,7 +204,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                     cur_score += new_score
                     state.board.put(legal_move.i, legal_move.j, legal_move.value)
                     # calling now minimax for minimizing player
-                    opt_move, max_score = minimax(state, alpha, beta, False, cur_score)
+                    opt_move, max_score = minimax(state, depth + 1, alpha, beta, False, cur_score)
                     # clear legal_move from the board to continue by checking other possible moves
                     # TODO: Pass a copy of the game state object that contains the proposed move to minimax() instead of adding and removing the move?
                     state.board.put(legal_move.i, legal_move.j, SudokuBoard.empty)
@@ -220,7 +228,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                     cur_score -= new_score
                     state.board.put(legal_move.i, legal_move.j, legal_move.value)
                     # calling now minimax for maximizing player
-                    opt_move, min_score = minimax(state, alpha, beta, True, cur_score)
+                    opt_move, min_score = minimax(state,depth + 1, alpha, beta, True, cur_score)
                     # clear legal_move from the board to continue by checking other possible moves
                     # TODO: Pass a copy of the game state object that contains the proposed move to minimax() instead of adding and removing the move?
                     state.board.put(legal_move.i, legal_move.j, SudokuBoard.empty)
@@ -242,7 +250,9 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
         move = random.choice(legal_moves)
         print("random legal_move is: " + str(move))
         self.propose_move(move)
-
+        f = open("random_proposed.txt", "a")
+        f.write("RND \n")
+        f.close()
         if self.verbose:
             # print statements for debug purposes
             print("--------------")
@@ -259,7 +269,15 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             print("Column filled values for selected cell: " +
                   str(get_filled_column_values(move.j, game_state)))
             print("--------------")
-        best_move, score = minimax(game_state, -math.inf, math.inf, True, 0)
+
+        best_move, score = minimax(game_state,0, -math.inf, math.inf, True, 0)
         print("returned legal_move is: " + str(best_move))
         if best_move is not None:
             self.propose_move(best_move)
+            f = open("minimax_proposed.txt", "a")
+            f.write("MINIMAX \n")
+            f.close()
+
+# DERIVE A FORMULA PROVIDING DEPTH INVERSELY PROPORTIONATE TO AVAILABLE LEGAL MOVES
+# THIS IS BECAUSE WHEN WE HAVE MORE LEGAL MOVES IT TAKES MORE TIME TO REACH A LEAF STATE
+# THUS WE LIMIT THE DEPTH MORE IN THE BEGINING OF THE GAME (MORE LEGAL MOVES AVAILABLE AND DEEPER TREE)
