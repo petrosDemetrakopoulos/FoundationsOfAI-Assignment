@@ -71,7 +71,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             block = get_filled_region_values(move.i, move.j, state)
             # N, excluding the cell under question (the cell we consider fo filling in)
             # we exclude it because scoreing function is called BEFORE the cell gets filled
-            full_len = state.board.board_width() - 1
+            full_len = state.board.N - 1
 
             # based onn the logic mentioned in the Assignment desctiption, we calculate score increase after the move
             # case where a row, a column and a block are completed after the move
@@ -147,8 +147,8 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
         def minimax(state: GameState, alpha: float, beta: float, is_maximizing_player: bool, cur_score: int):
             empty_cells = []
             # compute empty cells coordinates
-            for i in range(state.board.board_height()):
-                for j in range(state.board.board_width()):
+            for i in range(state.board.N):
+                for j in range(state.board.N):
                     if state.board.get(i, j) == SudokuBoard.empty:
                         empty_cells.append((i, j))
 
