@@ -146,7 +146,10 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                    and not TabooMove(i, j, value) in game_state.taboo_moves
 
         def estimate_depth(legal_moves_len: int):
-            return int(1.7**(math.log(len(game_state.moves))))
+            # c is a "conservativeness" factor
+            # we empirically figured out that a value that works pretty well for c is 1.7
+            c = 1.7
+            return int(c**(math.log(len(game_state.moves))))
 
         def minimax(state: GameState,depth: int, alpha: float, beta: float, is_maximizing_player: bool, cur_score: int):
             empty_cells = []
