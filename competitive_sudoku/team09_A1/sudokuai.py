@@ -107,7 +107,9 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
 
         def estimate_depth(legal_moves_len: int):
             # c is a "conservativeness" factor
-            # we empirically figured out that a value that works pretty well for c is 1.7
+            # we empirically figured out that a value that works pretty well for c is 1.8
+            # we raise this constant to the logarith of the number of moves that have already been played
+            # we use the logarithm to limit the exponential growth of the returned value
             c = 1.8
             return int(c**(math.log(len(game_state.moves))))
 
@@ -233,5 +235,3 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
         print("returned legal_move is: " + str(best_move))
         if best_move is not None:
             self.propose_move(best_move)
-
-
