@@ -106,6 +106,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
         def score_function(move: Move, state: GameState):
             # return the score that should be added to a player after the given legal_move
             # if the player has no score increase after the legal_move, this function returns 0
+            # this is the most obvious scoring function for the nodes as it perfectly expresses the objective of the player
             row = get_filled_row_values(move.i, state)
             col = get_filled_column_values(move.j, state)
             block = get_filled_region_values(move.i, move.j, state)
@@ -178,7 +179,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                                                                                                           coords[1],
                                                                                                           state)]
 
-            # no available legal legal_move, probably triggered due to call of the minimax() after all cells have been fileld in the the original board
+            # no available legal_move, probably triggered due to call of the minimax() after all cells have been fileld in the the original board
 
             if len(legal_moves) == 0:
                 if self.verbose:
@@ -200,8 +201,8 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                     # TODO: Pass a copy of the game state object that contains the proposed move to minimax() instead of adding and removing the move?
                     state.board.put(legal_move.i, legal_move.j, SudokuBoard.empty)
                     if max_score > cur_max_score:
-                        cur_max_score = max_score
                         opt_move = legal_move
+                    cur_max_score = max(cur_max_score, max_score)
 
                     # alpha-beta pruning
                     alpha = max(alpha, cur_max_score)
@@ -224,9 +225,8 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                     # TODO: Pass a copy of the game state object that contains the proposed move to minimax() instead of adding and removing the move?
                     state.board.put(legal_move.i, legal_move.j, SudokuBoard.empty)
                     if min_score < cur_min_score:
-                        cur_min_score = min_score
                         opt_move = legal_move
-
+                    cur_min_score = min(cur_min_score, min_score)
                     # alpha-beta pruning
                     beta = min(beta, cur_min_score)
                     if beta <= alpha:
