@@ -87,23 +87,11 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                         return 3
             return 0
 
-
         def possible(row_index, column_index, proposed_value):
             return game_state.board.get(row_index, column_index) == SudokuBoard.empty \
                    and not TabooMove(row_index, column_index, proposed_value) in game_state.taboo_moves
 
-        def findOptimalMove(state, max_depth):
-            max_score = -math.inf
-            best_move = Move(-1,-1,-1)
-
-            empty_cells = []
-            # compute empty cells coordinates
-            # these are the cells that the agent can probably fill
-            for i in range(N):
-                for j in range(N):
-                    if state.board.get(i, j) == SudokuBoard.empty:
-                        empty_cells.append((i, j))
-            
+        def legal_moves_after_pruning(state, empty_cells):
             # prune any cell that we have no info about it (region, row and column containing it are empty)
             # the reasoning behind this pruning is that it is a bit naive to fill in cells for which we have no information and most probably there will be better options
             # this technique significantly reduces tree size and offers performance advantage
@@ -129,7 +117,28 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                 for value in range(1, N + 1):
                     if possible(coords[0], coords[1], value) and value not in get_illegal_moves(coords[0], coords[1], state):
                         legal_moves.append(Move(coords[0], coords[1], value))
+            return legal_moves
+
+        def get_empty_cells(state):
+            empty_cells = []
+            # compute empty cells coordinates
+            # these are the cells that the agent can probably fill
+            for i in range(N):
+                for j in range(N):
+                    if state.board.get(i, j) == SudokuBoard.empty:
+                        empty_cells.append((i, j))
+            return empty_cells
+
+        def find_optimal_move(state, max_depth):
+            max_score = -math.inf
+            best_move = Move(-1,-1,-1)
+            empty_cells = get_empty_cells(state)
             
+            if len(empty_cells) == 0:
+                # game end, all cells are filled, practically reached a leaf node
+                return Move(-1, -1, -1)
+
+            legal_moves = legal_moves_after_pruning(state, empty_cells)
            
             for legal_move in legal_moves:
                  # make the move
@@ -150,51 +159,12 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             if depth >= max_depth:
                 return evaluate_state(state)
 
-            empty_cells = []
-            # compute empty cells coordinates
-            # these are the cells that the agent can probably fill
-            for i in range(N):
-                for j in range(N):
-                    if state.board.get(i, j) == SudokuBoard.empty:
-                        empty_cells.append((i, j))
+            empty_cells = get_empty_cells(state)
 
-            if len(empty_cells) == 0:
-                # game end, all cells are filled, practically reached a leaf node
+            legal_moves = legal_moves_after_pruning(state, empty_cells)
+            if len(legal_moves) == 0:
+                # no legal moves left
                 return evaluate_state(state)
-
-            # compute empty cells coordinates
-            # these are the cells that the agent can probably fill
-            for i in range(N):
-                for j in range(N):
-                    if state.board.get(i, j) == SudokuBoard.empty:
-                        empty_cells.append((i, j))
-            
-            # prune any cell that we have no info about it (region, row and column containing it are empty)
-            # the reasoning behind this pruning is that it is a bit naive to fill in cells for which we have no information and most probably there will be better options
-            # this technique significantly reduces tree size and offers performance advantage
-            # reward_cells list contain all empty cells except the ones that we have no info for
-            reward_cells = []
-            if not state.board.empty:
-                for cell in empty_cells:
-                    row_index = cell[0]
-                    cell_index = cell[1]
-                    if not (len(get_filled_row_values(row_index, state)) == 0 and
-                            len(get_filled_column_values(cell_index, state)) == 0 and
-                            len(get_filled_region_values(row_index, cell_index, state)) == 0):
-                        reward_cells.append(cell)
-            else:
-                # in case of an empty board, we assign empty_cells to reward_cells
-                # otherwise the pruning would prune all cells
-                reward_cells = empty_cells
-
-            # filter out illegal moves AND taboo moves from the empty_cells, 
-            # the resulting list contains all moves which are both possible and LEGAL
-            legal_moves = []
-            for coords in reward_cells:
-                for value in range(1, N + 1):
-                    if possible(coords[0], coords[1], value) and value not in get_illegal_moves(coords[0], coords[1], state):
-                        legal_moves.append(Move(coords[0], coords[1], value))
-
             # estimate a maximum depth we are willing to search up to
             # this maximum depth is a function of the length of the legal moves and the numbers of moves that have already been played. 
             # This depth limiting technique is used because we noticed that under circumstances (low time limit) 
@@ -236,116 +206,6 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                         break
                 return min_score
 
-
-
-        # def minimax(state: GameState, max_depth: int, depth: int, alpha: float, beta: float, is_maximizing_player: bool):
-        #     score = evaluate_state(state)
-        #     if depth >= max_depth:
-        #         return Move(-1, -1, -1), evaluate_state(state)
-        #     empty_cells = []
-        #     # compute empty cells coordinates
-        #     # these are the cells that the agent can probably fill
-        #     for i in range(N):
-        #         for j in range(N):
-        #             if state.board.get(i, j) == SudokuBoard.empty:
-        #                 empty_cells.append((i, j))
-
-        #     if len(empty_cells) == 0:
-        #         # game end, all cells are filled, practically reached a leaf node
-        #         return Move(-1, -1, -1), evaluate_state(state)
-
-        #     # prune any cell that we have no info about it (region, row and column containing it are empty)
-        #     # the reasoning behind this pruning is that it is a bit naive to fill in cells for which we have no information and most probably there will be better options
-        #     # this technique significantly reduces tree size and offers performance advantage
-        #     # reward_cells list contain all empty cells except the ones that we have no info for
-        #     reward_cells = []
-        #     if not state.board.empty:
-        #         for cell in empty_cells:
-        #             row_index = cell[0]
-        #             cell_index = cell[1]
-        #             if not (len(get_filled_row_values(row_index, state)) == 0 and
-        #                     len(get_filled_column_values(cell_index, state)) == 0 and
-        #                     len(get_filled_region_values(row_index, cell_index, state)) == 0):
-        #                 reward_cells.append(cell)
-        #     else:
-        #         # in case of an empty board, we assign empty_cells to reward_cells
-        #         # otherwise the pruning would prune all cells
-        #         reward_cells = empty_cells
-
-        #     # filter out illegal moves AND taboo moves from the empty_cells, 
-        #     # the resulting list contains all moves which are both possible and LEGAL
-        #     legal_moves = []
-        #     for coords in reward_cells:
-        #         for value in range(1, N + 1):
-        #             if possible(coords[0], coords[1], value) and value not in get_illegal_moves(coords[0], coords[1], state):
-        #                 legal_moves.append(Move(coords[0], coords[1], value))
-
-        #     # no available legal_move, triggered due to call of the minimax() after all cells have been filled
-        #     if len(legal_moves) == 0:
-        #         if self.verbose:
-        #             print("No legal moves left")
-        #         return Move(-1, -1, -1), cur_score
-
-        #     # estimate a maximum depth we are willing to search up to
-        #     # this maximum depth is a function of the length of the legal moves and the numbers of moves that have already been played. 
-        #     # This depth limiting technique is used because we noticed that under circumstances (low time limit) 
-        #     # the proposed moves were mostly random because the recursive minimax function did not have enough time to return the optimal move
-        #     # the depth limit is given by the fraction (moves already played)/(legal moves the agent can play in the current state) multiplied by a constant
-        #     # this quantity is monotonically increasing as the game progresses
-        #     # Thus we force the algorithm to search deeper as the game progresses
-        #     estimated_depth_limit = math.ceil(0.1*(len(game_state.moves) / len(legal_moves)))
-        #     if depth >= estimated_depth_limit:
-        #         return Move(-1, -1, -1), cur_score
-
-        #     if is_maximizing_player:
-        #         # initialize the cur_max_score with the minimum possible value supported by Python
-        #         cur_max_score = -math.inf
-        #         # arbitrariliy initialize optimal legal_move to be the first legal move (in the loop we find the real optimal legal_move)
-        #         opt_move = legal_moves[0]
-        #         for legal_move in legal_moves:
-        #             state.board.put(legal_move.i, legal_move.j,legal_move.value)
-        #             # calling now minimax for minimizing player
-        #             opt_move, max_score = minimax(state, max_depth, depth + 1, alpha, beta, False, cur_score)
-                   
-        #             # clear legal_move from the board to continue by checking other possible moves
-        #             state.board.put(legal_move.i, legal_move.j, SudokuBoard.empty)
-        #             if max_score > cur_max_score:
-        #                 opt_move = legal_move
-
-        #             cur_max_score = max(cur_max_score, max_score)
-
-        #             # alpha-beta pruning
-        #             # implemented as suggested in https://www.geeksforgeeks.org/minimax-algorithm-in-game-theory-set-4-alpha-beta-pruning/
-        #             alpha = max(alpha, cur_max_score)
-        #             if beta <= alpha:
-        #                 break
-                
-        #         return opt_move, cur_max_score
-        #     else:
-        #         # initialize the cur_min_score with the maximum possible value supported by Python
-        #         cur_min_score = math.inf
-        #         # arbitrariliy initialize optimal legal_move to be the first legal legal_move (in the loop we find the real optimal legal_move)
-        #         opt_move = legal_moves[0]
-        #         for legal_move in legal_moves:
-        #             new_score = evaluate(legal_move, state)
-        #             cur_score -= new_score
-        #             state.board.put(legal_move.i, legal_move.j,legal_move.value)
-        #             # calling now minimax for maximizing player
-        #             opt_move, min_score = minimax(state, max_depth, depth + 1, alpha, beta, True, cur_score)
-        #             cur_score += new_score
-        #             # clear legal_move from the board to continue by checking other possible moves
-        #             state.board.put(legal_move.i, legal_move.j, SudokuBoard.empty)
-        #             if min_score < cur_min_score:
-        #                 opt_move = legal_move
-        #             cur_min_score = min(cur_min_score, min_score)
-
-        #             # alpha-beta pruning
-        #             beta = min(beta, cur_min_score)
-        #             if beta <= alpha:
-        #                 break
-               
-        #         return opt_move, cur_min_score
-
         # compute_best_move body
         # filter out illegal moves AND taboo moves
         legal_moves = []
@@ -368,7 +228,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             # on each iteration the move proposed should be slightly better than the move of the previous iteration
             max_depth += 1
             print("max_depth = " + str(max_depth))
-            best_move = findOptimalMove(game_state, max_depth) # initial call to the recursive minimax function
+            best_move = find_optimal_move(game_state, max_depth) # initial call to the recursive minimax function
             print("minimax proposed move: " + str(best_move))
             if best_move != Move(-1, -1, -1):  # Failsafe mechanism to ensure we will never propose an invalid move
                 if self.verbose:
