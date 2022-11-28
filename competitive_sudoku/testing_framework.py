@@ -105,6 +105,6 @@ if __name__ == '__main__':
 
     print(" \n   > Win Rates (%) <")
     print("----------------------")
-    print("Agent: {0:.2f}%".format(agent_1.get_win_rate()))
-    print("Opponent: {0:.2f}%".format(agent_2.get_win_rate()))
+    print("Our Agent: {0:.2f}%".format(agent_1.get_win_rate()))
+    print("Opponent Agent: {0:.2f}%".format(agent_2.get_win_rate()))
     print("----------------------")
