@@ -1,10 +1,15 @@
 import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from time import sleep
+
+
+class Player:
+    def __init__(self, name, is_custom_agent):
+        self.name = name
+        self.is_custom_agentg = is_custom_agent
 
 
 def run_game(first_player, second_player):
-    command = "python simulate_game.py --first {} --second {} --time 0.5".format(first_player, second_player)
+    command = "python simulate_game.py --first {} --second {} --time 1".format(first_player, second_player)
     r = os.popen(command) #Execute command
     info = r.readlines()  #read command output
 
@@ -15,7 +20,7 @@ def run_game(first_player, second_player):
         # print(line)
 
     last_output_line = output_lines[len(output_lines) - 1]
-    print("The last line printed is: ", last_output_line)
+    # print("The last line printed is: ", last_output_line)
 
     if last_output_line == "Player 1 wins the game.":
         return 1
