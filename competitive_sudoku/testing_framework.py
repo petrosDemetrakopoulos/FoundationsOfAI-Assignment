@@ -33,8 +33,8 @@ class Agent:
         return self.name
 
 
-def run_game(player_1_name, player_2_name):
-    command = "python simulate_game.py --first {} --second {} --time 1".format(player_1_name, player_2_name)
+def run_game(player_1_name, player_2_name, time, board):
+    command = "python simulate_game.py --first {} --second {} --time {} --board {}".format(player_1_name, player_2_name, time, board)
     r = os.popen(command) #Execute command
     info = r.readlines()  #read command output
 
@@ -47,26 +47,22 @@ def run_game(player_1_name, player_2_name):
     last_output_line = output_lines[len(output_lines) - 1]
     # print("The last line printed is: ", last_output_line)
 
-    if last_output_line == "Player 1 wins the game.":
+    if "Player 1 wins the game." in last_output_line:
         return player_1_name
-    elif last_output_line == "Player 2 wins the game.":
+    elif "Player 2 wins the game." in last_output_line:
         return player_2_name
-    elif last_output_line == "The game ends in a draw.":
+    elif "The game ends in a draw." in last_output_line:
         return None
     else:
+        print("DEBUG - last_output_line: ", last_output_line)
         raise Exception("Unexpected last_output_line value!")
 
 
-if __name__ == '__main__':
-    num_of_runs = 100
-    num_of_threads = 100
-    print("> Active Threads: ", num_of_threads)
-    print("\n")
+def run_test_scenario(time_option, scenario_name, agent_1_name, agent_2_name, num_of_runs, num_of_threads):
+    print('*** TEST SESSION (Time: {}, Scenario: "{}") IN PROGRESS ***'.format(time_option, scenario_name))
 
-    print("*** TEST SESSION BEGAN ***")
-
-    agent_1 = Agent("team09_A1", True)
-    agent_2 = Agent("random_player", False)
+    agent_1 = Agent(agent_1_name, True)
+    agent_2 = Agent(agent_2_name, False)
 
     with ThreadPoolExecutor(num_of_threads) as executor:
         futures = []
@@ -74,7 +70,7 @@ if __name__ == '__main__':
         player_1_id = agent_1.get_name()
         player_2_id = agent_2.get_name()
         for i in range(num_of_runs):
-            futures.append(executor.submit(run_game, player_1_id, player_2_id))
+            futures.append(executor.submit(run_game, player_1_id, player_2_id, time_option, test_file))
             player_1_id, player_2_id = player_2_id, player_1_id
 
     # process each result as it is available
@@ -94,17 +90,56 @@ if __name__ == '__main__':
             agent_2.increment_wins()
             agent_1.increment_losses()
 
-    print("*** TEST RESULTS ***")
+    print('*** RESULTS (Time: {}, Scenario: "{}") ***'.format(time_option, scenario_name))
     print(" \n     > Overview <")
     print("----------------------")
     print("> #Game Runs: ", num_of_runs)
-    print("> #(Our) Custom Agent Wins: ", agent_1.get_wins() if agent_1.is_custom() else agent_2.get_wins())
-    print("> #Opponent Agent Wins: ", agent_2.get_wins() if not agent_2.is_custom() else agent_1.get_wins())
+    print("> #{} Wins: {}".format(agent_1.get_name(), agent_1.get_wins()))
+    print("> #{} Wins: {}".format(agent_2.get_name(), agent_2.get_wins()))
     print("> #Draws: ", num_of_runs - (agent_1.get_wins() + agent_2.get_wins()))
     print("----------------------")
 
     print(" \n   > Win Rates (%) <")
     print("----------------------")
-    print("Our Agent: {0:.2f}%".format(agent_1.get_win_rate()))
-    print("Opponent Agent: {0:.2f}%".format(agent_2.get_win_rate()))
+    print("{}: {:.2f}%".format(agent_1.get_name(), agent_1.get_win_rate()))
+    print("{}: {:.2f}%".format(agent_2.get_name(), agent_2.get_win_rate()))
     print("----------------------")
+
+
+if __name__ == '__main__':
+    num_of_runs = 5
+    num_of_threads = 5
+    test_scenarios_path = "./boards"
+    agent_1_name = "team09_A1"
+    agent_2_name = "random_player"
+    time_options = [0.1, 0.5, 1, 5]
+
+    print(" \n     > Script Settings <")
+    print("--------------------------------------------")
+    print("> #Game Runs/Test Scenario: ", num_of_runs)
+    print("> #Active Threads: ", num_of_threads)
+    print("--------------------------------------------")
+
+    test_scenarios = []
+    # Iterate directory
+    for path in os.listdir(test_scenarios_path):
+        # check if current path is a file
+        if os.path.isfile(os.path.join(test_scenarios_path, path)):
+            test_scenarios.append(test_scenarios_path + "/" + path)
+
+    print(" \n     > Loaded Test Scenarios <")
+    print("--------------------------------------------")
+    print("> #Loaded Test Scenarios: {}\n".format(len(test_scenarios)))
+    for test_file in test_scenarios:
+        print(test_file)
+    print("--------------------------------------------")
+    print("\n")
+
+    # Run the game for every time option
+    for time_option in time_options:
+        # Run the game for every loaded test scenario
+        for test_file in test_scenarios:
+            print("=======================================================================================================")
+            run_test_scenario(time_option, test_file, agent_1_name, agent_2_name, num_of_runs, num_of_threads)
+            print("\n=======================================================================================================")
+
