@@ -5,7 +5,23 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 class Player:
     def __init__(self, name, is_custom_agent):
         self.name = name
-        self.is_custom_agentg = is_custom_agent
+        self.is_custom_agent = is_custom_agent
+
+        self.wins = 0
+        self.losses = 0
+        self.draws = 0
+
+    def increment_wins(self):
+        self.wins += 1
+
+    def increment_defeats(self):
+        self.losses += 1
+
+    def increment_draws(self):
+        self.draws += 1
+
+    def get_win_rate(self):
+        return self.wins / (self.wins + self.losses + self.draws) * 100
 
 
 def run_game(first_player, second_player):
