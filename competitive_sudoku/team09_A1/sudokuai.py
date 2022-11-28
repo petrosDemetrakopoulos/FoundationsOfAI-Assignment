@@ -105,7 +105,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
 
         def minimax(state: GameState, max_depth: int, depth: int, alpha: float, beta: float, is_maximizing_player: bool, cur_score: int):
             if depth >= max_depth:
-                return None, cur_score
+                return Move(-1, -1, -1), cur_score
             empty_cells = []
             # compute empty cells coordinates
             # these are the cells that the agent can probably fill
@@ -116,7 +116,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
 
             if len(empty_cells) == 0:
                 # game end, all cells are filled, practically reached a leaf node
-                return None, cur_score
+                return Move(-1, -1, -1), cur_score
 
             # prune any cell that we have no info about it (region, row and column containing it are empty)
             # the reasoning behind this pruning is that it is a bit naive to fill in cells for which we have no information and most probably there will be better options
@@ -148,20 +148,18 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             if len(legal_moves) == 0:
                 if self.verbose:
                     print("No legal moves left")
-                return None, cur_score
+                return Move(-1, -1, -1), cur_score
 
             # estimate a maximum depth we are willing to search up to
             # this maximum depth is a function of the length of the legal moves and the numbers of moves that have already been played. 
-            # More on it on the report
             # This depth limiting technique is used because we noticed that under circumstances (low time limit) 
             # the proposed moves were mostly random because the recursive minimax function did not have enough time to return the optimal move
-            # the depth limit is given by the fraction (moves already played)/(legal moves the agent can play in the current state) 
-            # the fraction is rounded to the closest largest integer value
+            # the depth limit is given by the fraction (moves already played)/(legal moves the agent can play in the current state) multiplied by a constant
             # this quantity is monotonically increasing as the game progresses
-            # Thus  we force the algorithm to search deeper as the game progresses
+            # Thus we force the algorithm to search deeper as the game progresses
             estimated_depth_limit = math.ceil(0.1*(len(game_state.moves) / len(legal_moves)))
             if depth >= estimated_depth_limit:
-                return None, cur_score
+                return Move(-1, -1, -1), cur_score
 
             if is_maximizing_player:
                 # initialize the cur_max_score with the minimum possible value supported by Python
@@ -228,16 +226,6 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
         move = random.choice(legal_moves)
         self.propose_move(move)
         print("random proposed:" + str(move))
-        if self.verbose:
-            # print statements for debug purposes
-            print("--------------")
-            print("Random move proposed: " + str(move))
-            print("Score for selected legal_move: " + str(evaluate(move, game_state)))
-            print("Illegal moves for selected cell: " + str(get_illegal_moves(move.i, move.j, game_state)))
-            print("Block filled values for selected cell: " + str(get_filled_region_values(move.i, move.j, game_state)))
-            print("Row filled values for selected cell: " + str(get_filled_row_values(move.i, game_state)))
-            print("Column filled values for selected cell: " + str(get_filled_column_values(move.j, game_state)))
-            print("--------------")
 
         # initial depth 
         max_depth = 0
@@ -248,5 +236,15 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             print("max_depth = " + str(max_depth))
             best_move, score = minimax(game_state,max_depth, 0, -math.inf, math.inf, True, 0) # initial call to the recursive minimax function
             print("minimax proposed move: " + str(best_move))
-            if best_move is not None:  # Failsafe mechanism to ensure we will never propose a None move
+            if best_move != Move(-1, -1, -1):  # Failsafe mechanism to ensure we will never propose an invalid move
+                if self.verbose:
+                    # print statements for debug purposes
+                    print("--------------")
+                    print("Random move proposed: " + str(best_move))
+                    print("Score for selected legal_move: " + str(evaluate(best_move, game_state)))
+                    print("Illegal moves for selected cell: " + str(get_illegal_moves(best_move.i, best_move.j, game_state)))
+                    print("Block filled values for selected cell: " + str(get_filled_region_values(best_move.i, best_move.j, game_state)))
+                    print("Row filled values for selected cell: " + str(get_filled_row_values(best_move.i, game_state)))
+                    print("Column filled values for selected cell: " + str(get_filled_column_values(best_move.j, game_state)))
+                    print("--------------")
                 self.propose_move(best_move)
