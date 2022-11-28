@@ -91,9 +91,9 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             else:
                 return 0
 
-        def possible(i, j, value):
-            return game_state.board.get(i, j) == SudokuBoard.empty \
-                and not TabooMove(i, j, value) in game_state.taboo_moves
+        def possible(row_index, column_index, proposed_value):
+            return game_state.board.get(row_index, column_index) == SudokuBoard.empty \
+                   and not TabooMove(row_index, column_index, proposed_value) in game_state.taboo_moves
 
         def estimate_depth_limit(legal_moves_len: int):
             # the depth limit is given by the fraction (moves already played)/(legal moves the agent can play in the current state) 
@@ -141,7 +141,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             legal_moves = []
             for coords in reward_cells:
                 for value in range(1, N + 1):
-                    if possible(coords[0], coords[1], value) and value not in get_illegal_moves(coords[0],coords[1],state):
+                    if possible(coords[0], coords[1], value) and value not in get_illegal_moves(coords[0], coords[1], state):
                         legal_moves.append(Move(coords[0], coords[1], value))
 
             # no available legal_move, triggered due to call of the minimax() after all cells have been filled
