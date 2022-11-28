@@ -1,5 +1,25 @@
 import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import sys
+
+
+class Logger(object):
+    def __init__(self):
+        self.terminal = sys.stdout
+        self.log = open("logfile.log", "a")
+
+    def write(self, message):
+        self.terminal.write(message)
+        self.log.write(message)
+
+    def flush(self):
+        # this flush method is needed for python 3 compatibility.
+        # this handles the flush command by doing nothing.
+        # you might want to specify some extra behavior here.
+        pass
+
+
+sys.stdout = Logger()
 
 
 class Agent:
@@ -107,9 +127,24 @@ def run_test_scenario(time_option, scenario_name, agent_1_name, agent_2_name, nu
 
 
 if __name__ == '__main__':
-    num_of_runs = 5
-    num_of_threads = 5
-    test_scenarios_path = "./boards"
+    num_of_runs = 12
+    num_of_threads = 12
+    test_files_root_path = "./boards"
+    test_files_names = ["easy-2x2.txt",
+                      "easy-3x3.txt",
+                      "empty-2x2.txt",
+                      "empty-2x3.txt",
+                      "empty-3x3.txt",
+                      "empty-3x4.txt",
+                      "empty-4x4.txt",
+                      "hard-3x3.txt",
+                      "random-2x3.txt",
+                      "random-3x3.txt",
+                      "random-3x4.txt",
+                      "random-4x4.txt"]
+
+    test_files_paths = [test_files_root_path + "/" + file_name for file_name in test_files_names]
+
     agent_1_name = "team09_A1"
     agent_2_name = "random_player"
     time_options = [0.1, 0.5, 1, 5]
@@ -120,17 +155,10 @@ if __name__ == '__main__':
     print("> #Active Threads: ", num_of_threads)
     print("--------------------------------------------")
 
-    test_scenarios = []
-    # Iterate directory
-    for path in os.listdir(test_scenarios_path):
-        # check if current path is a file
-        if os.path.isfile(os.path.join(test_scenarios_path, path)):
-            test_scenarios.append(test_scenarios_path + "/" + path)
-
     print(" \n     > Loaded Test Scenarios <")
     print("--------------------------------------------")
-    print("> #Loaded Test Scenarios: {}\n".format(len(test_scenarios)))
-    for test_file in test_scenarios:
+    print("> #Loaded Test Scenarios: {}\n".format(len(test_files_paths)))
+    for test_file in test_files_paths:
         print(test_file)
     print("--------------------------------------------")
     print("\n")
@@ -138,7 +166,7 @@ if __name__ == '__main__':
     # Run the game for every time option
     for time_option in time_options:
         # Run the game for every loaded test scenario
-        for test_file in test_scenarios:
+        for test_file in test_files_paths:
             print("=======================================================================================================")
             run_test_scenario(time_option, test_file, agent_1_name, agent_2_name, num_of_runs, num_of_threads)
             print("\n=======================================================================================================")
