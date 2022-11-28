@@ -84,7 +84,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                         return 3
                     # case where only 1 among column, row and block are completed
                     elif len(filled_row) == full_len or len(filled_col) == full_len or len(filled_block) == full_len:
-                        return 3
+                        return 1
             return 0
 
         def possible(row_index, column_index, proposed_value):
@@ -235,7 +235,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                     # print statements for debug purposes
                     print("--------------")
                     print("Random move proposed: " + str(best_move))
-                    print("Score for selected legal_move: " + str(evaluate(best_move, game_state)))
+                    print("Score for selected legal_move: " + str(evaluate_state(game_state)))
                     print("Illegal moves for selected cell: " + str(get_illegal_moves(best_move.i, best_move.j, game_state)))
                     print("Block filled values for selected cell: " + str(get_filled_region_values(best_move.i, best_move.j, game_state)))
                     print("Row filled values for selected cell: " + str(get_filled_row_values(best_move.i, game_state)))
