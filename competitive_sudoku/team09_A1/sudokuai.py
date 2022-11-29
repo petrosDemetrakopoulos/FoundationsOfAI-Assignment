@@ -81,6 +81,9 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             # case where only 1 among column, row and block are completed
             elif len(filled_row) == full_len or len(filled_col) == full_len or len(filled_block) == full_len:
                 return 1
+            # case where either a row, a column, a region or a combination of them can be immediately filled on the next move
+            # we want to introduce an artificial penalty (not reflected in the final score of the game) for proposing such move
+            # this will force the agent to avoid such moves as they allow the oponent to immediately score points afterwards
             elif len(filled_row) == full_len-1 or len(filled_col) == full_len-1 or len(filled_block) == full_len-1:
                 is_row_almost_filled = len(filled_row) == full_len-1
                 is_col_almost_filled = len(filled_col) == full_len-1
@@ -96,8 +99,8 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             # prune any cell that we have no info about it (region, row and column containing it are empty)
             # the reasoning behind this pruning is that it is a bit naive to fill in cells for which we have no information and most probably there will be better options
             # this technique significantly reduces tree size and offers performance advantage
-            # reward_cells list contain all empty cells except the ones that we have no info for
-            reward_cells = []
+            # known_no_reward_cells list contains all empty cells except the ones that we have no info for
+            known_no_reward_cells = []
             if not state.board.empty:
                 for cell in empty_cells:
                     row_index = cell[0]
@@ -105,13 +108,13 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                     if not (len(get_filled_row_values(row_index, state)) == 0 and
                             len(get_filled_column_values(cell_index, state)) == 0 and
                             len(get_filled_region_values(row_index, cell_index, state)) == 0):
-                        reward_cells.append(cell)
+                        known_no_reward_cells.append(cell)
             else:
-                # in case of an empty board, we assign empty_cells to reward_cells
+                # in case of an empty board, we assign empty_cells to known_no_reward_cells
                 # otherwise the pruning would prune all cells
                 reward_cells = empty_cells
 
-            # filter out illegal moves AND taboo moves from the empty_cells, 
+            # filter out illegal moves AND taboo moves from the known_no_reward_cells, 
             # the resulting list contains all moves which are both possible and LEGAL
             legal_moves = []
             for coords in reward_cells:
@@ -188,7 +191,9 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                     maximizer_score_increase = evaluate_move_score_increase(state, legal_move)
                     # play the move (add the move on the board)
                     state.board.put(legal_move.i, legal_move.j,legal_move.value)
-                    # increase score for the maximizer in the current state
+                    # in the scores property of the game state we can find the scores of the maximizing and minimizing players
+                    # because our logic is based on difference of scores after moves
+                    # when plating a move we need to temporarily reflect its result on the score before continuing the search
                     if state.scores:
                         if state.scores[0]:
                             state.scores[0] += maximizer_score_increase

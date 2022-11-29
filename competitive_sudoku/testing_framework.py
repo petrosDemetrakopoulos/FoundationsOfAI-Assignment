@@ -6,7 +6,10 @@ import sys
 class Logger(object):
     def __init__(self):
         self.terminal = sys.stdout
-        self.log = open("logfile.log", "a")
+        log_file_name = "logfile.log"
+        if os.path.exists(log_file_name):
+            os.remove(log_file_name)
+        self.log = open(log_file_name, "a")
 
     def write(self, message):
         self.terminal.write(message)
