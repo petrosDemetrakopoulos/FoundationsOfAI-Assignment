@@ -82,13 +82,14 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             elif len(filled_row) == full_len or len(filled_col) == full_len or len(filled_block) == full_len:
                 return 1
             # case where either a row, a column, a region or a combination of them can be immediately filled on the next move
-            # we want to introduce an artificial penalty (not reflected in the final score of the game) for proposing such move
+            # and thus to easily provide points to the opponent
+            # We want to introduce an artificial penalty (not reflected in the final score of the game) for proposing such moves
             # this will force the agent to avoid such moves as they allow the oponent to immediately score points afterwards
             elif len(filled_row) == full_len-1 or len(filled_col) == full_len-1 or len(filled_block) == full_len-1:
                 is_row_almost_filled = len(filled_row) == full_len-1
                 is_col_almost_filled = len(filled_col) == full_len-1
                 is_block_almost_filled = len(filled_block) == full_len-1
-                return -(is_row_almost_filled + is_col_almost_filled + is_block_almost_filled)*3
+                return -3*(is_row_almost_filled + is_col_almost_filled + is_block_almost_filled)
             return 0
 
         def possible(row_index, column_index, proposed_value):
@@ -133,6 +134,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                         empty_cells.append((i, j))
             return empty_cells
 
+        # the function that initially triggers the recursion
         def find_optimal_move(state, max_depth):
             max_score = -math.inf
             best_move = Move(-1,-1,-1)
@@ -156,17 +158,17 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                         state.scores[0] = score_increase
                 else:
                     state.scores = [0,score_increase]
-                moveVal = minimax(state, max_depth, 0, -math.inf, math.inf, False)
+                crn_max_score = minimax(state, max_depth, 0, -math.inf, math.inf, False)
 
-                # clear legal_move from the board to continue by checking other possible moves
+                # clear legal_move from the board to continue by checking other possible moves (recurrsion unrolling)
                 state.board.put(legal_move.i, legal_move.j, SudokuBoard.empty)
 
                 # undo score increase
                 state.scores[0] -= score_increase
 
-                if moveVal > max_score:
+                if crn_max_score > max_score:
                     best_move = Move(legal_move.i, legal_move.j, legal_move.value)
-                    max_score = moveVal
+                    max_score = crn_max_score
             return best_move
 
         def minimax(state: GameState, max_depth: int, depth: int, alpha: float, beta: float, is_maximizing_player: bool):
