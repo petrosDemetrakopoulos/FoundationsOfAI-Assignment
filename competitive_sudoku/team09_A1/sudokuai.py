@@ -112,12 +112,12 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             else:
                 # in case of an empty board, we assign empty_cells to known_no_reward_cells
                 # otherwise the pruning would prune all cells
-                reward_cells = empty_cells
+                known_no_reward_cells = empty_cells
 
             # filter out illegal moves AND taboo moves from the known_no_reward_cells, 
             # the resulting list contains all moves which are both possible and LEGAL
             legal_moves = []
-            for coords in reward_cells:
+            for coords in known_no_reward_cells:
                 for value in range(1, N + 1):
                     if possible(coords[0], coords[1], value) and value not in get_illegal_moves(coords[0], coords[1], state):
                         legal_moves.append(Move(coords[0], coords[1], value))
