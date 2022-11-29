@@ -7,19 +7,27 @@ import math
 from competitive_sudoku.sudoku import GameState, Move, SudokuBoard, TabooMove
 import competitive_sudoku.sudokuai
 
+
 class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
     """
     Sudoku AI that computes a move for a given sudoku configuration.
     """
     verbose = False  # a flag to print useful debug logs after each turn
+
     def __init__(self):
         super().__init__()
 
     def compute_best_move(self, game_state: GameState) -> None:
         N = game_state.board.N
 
-        # helper functions
+        ################### Start of helper functions ###################
         def get_filled_row_values(row_index: int, state: GameState):
+            """
+            Returns the non-empty values of the row specified by a given row index.
+            @param row_index: The row index
+            @param state: The GameState object that describes the game in progress
+            @return: A list containing the integer values of the specified row's non-empty cells
+            """
             # returns non-empty values in row with index row_index
             filled_values = []
             for i in range(state.board.N):
@@ -29,7 +37,12 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             return filled_values
 
         def get_filled_column_values(column_index: int, state: GameState):
-            # returns non-empty values in column with index column_index
+            """
+            Returns the non-empty values of the column specified by a given column index.
+            @param column_index: The column index
+            @param state: The GameState object that describes the game in progress
+            @return: A list containing the integer values of the specified column's non-empty cells.
+            """
             filled_values = []
             for i in range(state.board.N):
                 cur_cell = state.board.get(i, column_index)
@@ -38,53 +51,75 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             return filled_values
 
         def get_filled_region_values(row_index: int, column_index: int, state: GameState):
-            # return the non-empty values of the rectangular block that the cell with coordinates
-            # (row, column) belongs to
+            """
+            Returns the non-empty values of the (rectangular) region that the cell specified
+            by the given row and column indices belongs to.
+            @param row_index: The row index
+            @param column_index: The column index
+            @param state: The GameState object that describes the game in progress
+            @return: A list containing the integer values of the specified region's non-empty cells
+            """
             first_row = (row_index // state.board.m) * state.board.m
-            # a smart way to find the first row of the rectangular region where the cell belongs to,
-            # is to get the integer part of the row / m fraction (floor division) and then multiply by m
-            # we do the same to distinguish the first column of the rectangular region in question respectively
+            # A smart way to determine the first row of the rectangular region where the cell belongs to,
+            # is to get the integer part of the (row / m) fraction (floor division) and then multiply it by m.
+            # The same logic is applied to determine the first column of the rectangular region in question.
             first_column = (column_index // state.board.n) * state.board.n
             filled_values = []
-            for r in range(first_row, first_row + state.board.m): # if first_row is the index of the first row of the region, then the index of the last row should be first_row + state.board.m -1
-                for c in range(first_column, first_column + state.board.n): # if first_column is the index of the first column of the region, then the index of the last colum should be first_column + state.board.n -1
+            # If first_row is the index of the first row of the region, then the index of the last row should be
+            # first_row + state.board.m - 1
+            for r in range(first_row, first_row + state.board.m):
+                # If first_column is the index of the first column of the region, then the index of the last column
+                # should be first_column + state.board.n - 1
+                for c in range(first_column, first_column + state.board.n):
                     crn_cell = state.board.get(r, c)
                     if crn_cell != SudokuBoard.empty:
                         filled_values.append(crn_cell)
             return filled_values
 
         def get_illegal_moves(row_index: int, col_index: int, state: GameState):
-            # return a list of numbers that CANNOT be added on a given empty cell (row,col)
-            # these numbers are illegal and the cannot be set to the given cell they already exist in at least 1 out of the cell row, column or block
+            """
+            Returns a list of numbers that already exist in the specified cell's row, column or region. These numbers
+            are illegal values and CANNOT be put on the given empty cell.
+            as they
+            @param row_index: The empty cell's row index
+            @param col_index: The empty cell's column index
+            @param state: The GameState object that describes the game in progress
+            @return: A list of integers representing the illegal values of the specified empty cell.
+            """
             illegal = get_filled_row_values(row_index, state) + get_filled_column_values(col_index, state) + get_filled_region_values(row_index, col_index, state)
-            return set(illegal)  # easy way to remove duplicates 
+            return set(illegal)  # Easy way to remove duplicates
 
-        def evaluate_move_score_increase(state: GameState, move: Move):
+        def evaluate_move_score_increase(move: Move, state: GameState):
+            """
+            Calculates the score increase achieved after the proposed move is made.
+            @param move: A Move object that describes the proposed move
+            @param state: The GameState object that describes the game in progress
+            @return: The calculated score increase achieved by the proposed move
+            """
             filled_row = get_filled_row_values(move.i, state)
             filled_col = get_filled_column_values(move.j, state)
             filled_block = get_filled_region_values(move.i, move.j, state)
 
             full_len = N - 1
-            # based onn the logic mentioned in the assignment desctiption, we calculate score increase after the move
-            # case where a row, a column and a block are completed after the legal_move
+            # Case where a row, a column and a region are completed after the proposed move is made
             if len(filled_row) == full_len and len(filled_col) == full_len and len(filled_block) == full_len:
                 return 7
-            # case where a row and a column is completed
+            # Case where a row and a column are completed after the proposed move is made
             elif len(filled_row) == full_len and len(filled_col) == full_len:
                 return 3
-            # case where a row and a block is completed
+            # Case where a row and a region are completed after the proposed move is made
             elif len(filled_row) == full_len and len(filled_block) == full_len:
                 return 3
-            # case where a col and a block is completed
+            # Case where a col and a region are completed after the proposed move is made
             elif len(filled_row) == full_len and len(filled_block) == full_len:
                 return 3
-            # case where only 1 among column, row and block are completed
+            # Case where only 1 among column, row and region are completed after the proposed move is made
             elif len(filled_row) == full_len or len(filled_col) == full_len or len(filled_block) == full_len:
                 return 1
-            # case where either a row, a column, a region or a combination of them can be immediately filled on the next move
-            # and thus to easily provide points to the opponent
-            # We want to introduce an artificial penalty (not reflected in the final score of the game) for proposing such moves
-            # this will force the agent to avoid such moves as they allow the oponent to immediately score points afterwards
+            # Case where either a row, a column, a region or a combination of them can be immediately filled during the
+            # next game turn, thus easily providing points to the opponent. Our intention is to introduce an artificial
+            # "penalty" (not reflected in the final score of the game) for the proposal of such moves. This will force
+            # the agent to avoid such moves, as they allow the opponent to immediately score points afterwards.
             elif len(filled_row) == full_len-1 or len(filled_col) == full_len-1 or len(filled_block) == full_len-1:
                 is_row_almost_filled = len(filled_row) == full_len-1
                 is_col_almost_filled = len(filled_col) == full_len-1
@@ -125,9 +160,15 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             return legal_moves
 
         def get_empty_cells(state):
+            """
+            Returns the empty cells of the sudoku board at a specified game state
+            @param state: The GameState object that describes the current state of the game in progress
+            @return: A list of integer tuples (i, j) representing the coordinates of the empty cells
+            present in the Sudoku board at its current game state
+            """
             empty_cells = []
-            # compute empty cells coordinates
-            # these are the cells that the agent can probably fill
+            # Compute empty cells coordinates
+            # These are the cells that the agent can probably fill
             for i in range(N):
                 for j in range(N):
                     if state.board.get(i, j) == SudokuBoard.empty:
@@ -136,8 +177,14 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
 
         # the function that initially triggers the recursion
         def find_optimal_move(state, max_depth):
+            """
+            Used as a helper function that triggers Minimax's recursive call
+            @param state: The GameState object that describes the current state of the game in progress
+            @param max_depth: The maximum depth to be reached by Minimax's tree
+            @return: A Move object representing the best game move determined through Minimax's recursion
+            """
             max_score = -math.inf
-            best_move = Move(-1,-1,-1)
+            best_move = Move(-1, -1, -1)
             empty_cells = get_empty_cells(state)
             
             if len(empty_cells) == 0:
@@ -147,59 +194,76 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             legal_moves = legal_moves_after_pruning(state, empty_cells)
            
             for legal_move in legal_moves:
-                # calculate the amount by which the score of maximizing player will be increased if it plays legal_move
-                score_increase = evaluate_move_score_increase(state, legal_move)
-                # make the move
-                state.board.put(legal_move.i, legal_move.j,legal_move.value)
-                # increase the score of the player at the current state
-                # the convention we used for score is that we store the score of maximizing player om state.scores[0] and 
-                # score of minimizing player on state.scores[1]
+                # Calculate the amount by which the score of the maximizing player will be increased if it plays legal_move
+                score_increase = evaluate_move_score_increase(legal_move, state)
+                # Make the move
+                state.board.put(legal_move.i, legal_move.j, legal_move.value)
+
+                # Increase the score of the player at the current state.
+                # The score of the maximizing player is saved at state.scores[0] and 
+                # the score of minimizing player is saved at state.scores[1]
                 if state.scores:
                     if state.scores[0]:
                         state.scores[0] += score_increase
                     else:
                         state.scores[0] = score_increase
                 else:
-                    state.scores = [0,score_increase]
-                crn_max_score = minimax(state, max_depth, 0, -math.inf, math.inf, False)
+                    state.scores = [0, score_increase]
+                cur_max_score = minimax(state, max_depth, 0, -math.inf, math.inf, False)
 
-                # clear legal_move from the board to continue by checking other possible moves (recurrsion unrolling)
+                # Clear legal_move from the board to continue by checking other possible moves (recursion unrolling)
                 state.board.put(legal_move.i, legal_move.j, SudokuBoard.empty)
 
-                # undo score increase
+                # Undo the score increase to continue by checking other possible moves (recursion unrolling)
                 state.scores[0] -= score_increase
 
-                if crn_max_score > max_score:
+                if cur_max_score > max_score:
                     best_move = Move(legal_move.i, legal_move.j, legal_move.value)
-                    max_score = crn_max_score
+                    max_score = cur_max_score
             return best_move
 
         def minimax(state: GameState, max_depth: int, depth: int, alpha: float, beta: float, is_maximizing_player: bool):
+            """
+            Implementation of the Minimax algorithm that includes alpha-beta pruning
+            @param state: The GameState object that describes the current state of the game in progress
+            @param max_depth: The maximum depth to be reached by Minimax's tree
+            @param depth: The current depth reached by Minimax's tree
+            @param alpha: The alpha value (used for alpha-beta pruning)
+            @param beta: The beta value (used for alpha-beta pruning)
+            @param is_maximizing_player: A boolean flag indicating whether it is the maximizing player's turn to play
+            @return: The maximum maximizer-minimizer score difference achieved by the Minimax Algorithm
+            """
             empty_cells = get_empty_cells(state)
             legal_moves = legal_moves_after_pruning(state, empty_cells)
+
             if depth >= max_depth: 
-                # max depth reached, returning the score of the node
+                # Max depth reached, returning the score of the node
                 return state.scores[0] - state.scores[1]
             
             if len(legal_moves) == 0:
-                # no legal moves left, practically a leaf node
-                # the evaluation function of a node is the difference between the score of the maximizer at this state and the score of the minimizer at the same state
-                # this is the quantity that the minimax tries to maximize for maximizing player and minimize for the opponent
+                # No legal moves left, practically a leaf node The evaluation function of a node is the difference
+                # between the score of the maximizer at this state and the score of the minimizer at the same state.
+                # This is the quantity that the minimax tries to maximize for the maximizing player and minimize for the
+                # opponent
                 return state.scores[0] - state.scores[1]
 
             if is_maximizing_player:
-                # maximizer's move
-                # initialize max_score with the lowest possible supported value
+                # Maximizer's move
+                # Initialize max_score with the lowest possible supported value
                 max_score = -math.inf
                 
                 for legal_move in legal_moves:
-                    # calculate the amount by which the score of maximizing player will be increased if it plays legal_move
-                    maximizer_score_increase = evaluate_move_score_increase(state, legal_move)
-                    # play the move (add the move on the board)
-                    state.board.put(legal_move.i, legal_move.j,legal_move.value)
-                    # in the scores property of the game state we can find the scores of the maximizing and minimizing players
-                    # because our logic is based on difference of scores after moves
-                    # when playing a move we need to temporarily reflect its result on the score before continuing the search
+                    # Calculate the amount by which the score of the maximizing player will increase if it plays
+                    # legal_move
+                    maximizer_score_increase = evaluate_move_score_increase(legal_move, state)
+
+                    # Play the move (add the move to the sudoku board)
+                    state.board.put(legal_move.i, legal_move.j, legal_move.value)
+
+                    # In the "scores" property of the GameState object we can find the scores of the maximizing and
+                    # minimizing players. Since our logic is based on the difference of scores between the maximizing
+                    # player and minimizing player after a move is played, we need to temporarily reflect the move's
+                    # result on the player score before continuing the search
                     if state.scores:
                         if state.scores[0]:
                             state.scores[0] += maximizer_score_increase
@@ -208,20 +272,21 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                     else:
                         state.scores = [maximizer_score_increase, 0]
                     
-                    # call minimax for the minimizing player
+                    # Call minimax for the minimizing player
                     max_score = max(max_score, minimax(state, max_depth, depth+1, alpha, beta, False))
 
-                    # undo the move
+                    # Clear legal_move from the board to continue by checking other possible moves (recursion unrolling)
                     state.board.put(legal_move.i, legal_move.j, SudokuBoard.empty)
 
-                    # undo score increase
+                    # Undo the score increase to continue by checking other possible moves (recursion unrolling)
                     state.scores[0] -= maximizer_score_increase
 
-                    # implementation of the alpha-beta prunning technique as demonstrated on
+                    # Implementation of the alpha-beta pruning technique as demonstrated on
                     # https://www.geeksforgeeks.org/minimax-algorithm-in-game-theory-set-4-alpha-beta-pruning
                     alpha = max(alpha, max_score)
                     if beta <= alpha:
                         break
+
                 return max_score
             else:
                 # minimizer's move
@@ -229,9 +294,14 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                 min_score = math.inf
 
                 for legal_move in legal_moves:
-                    minimizer_score_increase = evaluate_move_score_increase(state, legal_move)
-                    state.board.put(legal_move.i, legal_move.j,legal_move.value)
-                    # increase score for the minimizer in the current state
+                    # Calculate the amount by which the score of the minimizing player will increase if it plays
+                    # legal_move
+                    minimizer_score_increase = evaluate_move_score_increase(legal_move, state)
+
+                    # Play the move (add the move to the sudoku board)
+                    state.board.put(legal_move.i, legal_move.j, legal_move.value)
+
+                    # Increase score for the maximizer in the current state
                     if state.scores:
                         if state.scores[1]:
                             state.scores[1] += minimizer_score_increase
@@ -240,22 +310,23 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                     else:
                         state.scores = [0, minimizer_score_increase]
 
-                    # call minimax for the maximizing player
+                    # Call minimax for the maximizing player
                     min_score = min(min_score, minimax(state, max_depth, depth+1, alpha, beta, True))
 
-                    # undo the move
+                    # Clear legal_move from the board to continue by checking other possible moves (recursion unrolling)
                     state.board.put(legal_move.i, legal_move.j, SudokuBoard.empty)
 
-                    # undo score increase
+                    # Undo the score increase to continue by checking other possible moves (recursion unrolling)
                     state.scores[1] -= minimizer_score_increase
 
                     beta = min(beta, min_score)
                     if beta <= alpha:
                         break
-                return min_score
 
-        # compute_best_move body
-        # filter out illegal moves AND taboo moves
+                return min_score
+        #################### End of helper functions ####################
+
+        # Filter out illegal moves AND taboo moves
         legal_moves = []
         for i in range(N):
             for j in range(N):
@@ -263,25 +334,24 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                     if possible(i, j, value) and value not in get_illegal_moves(i, j, game_state):
                        legal_moves.append(Move(i, j, value))
 
-        # propose a valid move arbitrarily at first (random choice from legal moves), 
-        # then try to optimize it with minimax and propose new moves as we still have time to do so
+        # Propose a valid move arbitrarily at first (random choice from legal moves),
+        # then keep finding optimal moves with minimax and propose them for as long as we are given the time to do so.
         move = random.choice(legal_moves)
         self.propose_move(move)
 
-        # initial depth 
+        # Initial Minimax search depth
         max_depth = 0
         while True:
-            # iteratively increase tree depth to produce more accurate moves
-            # on each iteration the move proposed should be slightly better than the move of the previous iteration
+            # Iteratively increase Minimax's tree depth to discover more optimal moves.
+            # On each iteration the move proposed should be slightly better than the move of the previous iteration.
             max_depth += 1
-            best_move = find_optimal_move(game_state, max_depth) # initial call to the recursive minimax function
-
+            best_move = find_optimal_move(game_state, max_depth)  # Initial call to the recursive minimax function
             if best_move != Move(-1, -1, -1):  # Failsafe mechanism to ensure we will never propose an invalid move
                 if self.verbose:
-                    # print statements for debug purposes
+                    # Print statements for debug purposes
                     print("--------------")
                     print("Random move proposed: " + str(best_move))
-                    print("Score for selected legal_move: " + str(evaluate_move_score_increase(game_state, best_move)))
+                    print("Score for selected legal_move: " + str(evaluate_move_score_increase(best_move, game_state)))
                     print("Illegal moves for selected cell: " + str(get_illegal_moves(best_move.i, best_move.j, game_state)))
                     print("Block filled values for selected cell: " + str(get_filled_region_values(best_move.i, best_move.j, game_state)))
                     print("Row filled values for selected cell: " + str(get_filled_row_values(best_move.i, game_state)))
