@@ -257,7 +257,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
         #print("random proposed:" + str(move))
 
         # initial depth 
-        max_depth = 2
+        max_depth = 0
         while True:
             # iteratively increase tree depth to produce more accurate moves
             # on each iteration the move proposed should be slightly better than the move of the previous iteration
