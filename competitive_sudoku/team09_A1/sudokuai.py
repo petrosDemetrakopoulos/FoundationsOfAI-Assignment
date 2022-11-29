@@ -219,30 +219,46 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             return best_move
 
         def minimax(state: GameState, max_depth: int, depth: int, alpha: float, beta: float, is_maximizing_player: bool):
+            """
+            Implementation of the Minimax algorithm that includes alpha-beta pruning
+            @param state: The GameState object that describes the current state of the game in progress
+            @param max_depth: The maximum depth to be reached by Minimax's tree
+            @param depth: The current depth reached by Minimax's tree
+            @param alpha: The alpha value (used for alpha-beta pruning)
+            @param beta: The beta value (used for alpha-beta pruning)
+            @param is_maximizing_player: A boolean flag indicating whether it is the maximizing player's turn to play
+            @return: The maximum maximizer-minimizer score difference achieved by the Minimax Algorithm
+            """
             empty_cells = get_empty_cells(state)
             legal_moves = legal_moves_after_pruning(state, empty_cells)
+
             if depth >= max_depth: 
-                # max depth reached, returning the score of the node
+                # Max depth reached, returning the score of the node
                 return state.scores[0] - state.scores[1]
             
             if len(legal_moves) == 0:
-                # no legal moves left, practically a leaf node
-                # the evaluation function of a node is the difference between the score of the maximizer at this state and the score of the minimizer at the same state
-                # this is the quantity that the minimax tries to maximize for maximizing player and minimize for the opponent
+                # No legal moves left, practically a leaf node The evaluation function of a node is the difference
+                # between the score of the maximizer at this state and the score of the minimizer at the same state.
+                # This is the quantity that the minimax tries to maximize for the maximizing player and minimize for the
+                # opponent
                 return state.scores[0] - state.scores[1]
 
             if is_maximizing_player:
-                # maximizer's move
+                # Maximizer's move
                 max_score = -math.inf
                 
                 for legal_move in legal_moves:
-                    # calculate the amount by which the score of maximizing player will be increased if it plays legal_move
+                    # Calculate the amount by which the score of the maximizing player will increase if it plays
+                    # legal_move
                     maximizer_score_increase = evaluate_move_score_increase(legal_move, state)
-                    # play the move (add the move on the board)
-                    state.board.put(legal_move.i, legal_move.j,legal_move.value)
-                    # in the scores property of the game state we can find the scores of the maximizing and minimizing players
-                    # because our logic is based on difference of scores after moves
-                    # when plating a move we need to temporarily reflect its result on the score before continuing the search
+
+                    # Play the move (add the move to the sudoku board)
+                    state.board.put(legal_move.i, legal_move.j, legal_move.value)
+
+                    # In the "scores" property of the GameState object we can find the scores of the maximizing and
+                    # minimizing players. Since our logic is based on the difference of scores between the maximizing
+                    # player and minimizing player after a move is played, we need to temporarily reflect the move's
+                    # result on the player score before continuing the search
                     if state.scores:
                         if state.scores[0]:
                             state.scores[0] += maximizer_score_increase
@@ -251,28 +267,34 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                     else:
                         state.scores = [maximizer_score_increase, 0]
                     
-                    # call minimax for the minimizing player
+                    # Call minimax for the minimizing player
                     max_score = max(max_score, minimax(state, max_depth, depth+1, alpha, beta, False))
 
-                    # undo the move
+                    # Clear legal_move from the board to continue by checking other possible moves (recursion unrolling)
                     state.board.put(legal_move.i, legal_move.j, SudokuBoard.empty)
 
-                    # undo score increase
+                    # Undo the score increase to continue by checking other possible moves (recursion unrolling)
                     state.scores[0] -= maximizer_score_increase
 
-                    # implementation of the alpha-beta prunning technique as demonstrated on
+                    # Implementation of the alpha-beta pruning technique as demonstrated on
                     # https://www.geeksforgeeks.org/minimax-algorithm-in-game-theory-set-4-alpha-beta-pruning
                     alpha = max(alpha, max_score)
                     if beta <= alpha:
                         break
+
                 return max_score
             else:
                 min_score = math.inf
 
                 for legal_move in legal_moves:
+                    # Calculate the amount by which the score of the minimizing player will increase if it plays
+                    # legal_move
                     minimizer_score_increase = evaluate_move_score_increase(legal_move, state)
-                    state.board.put(legal_move.i, legal_move.j,legal_move.value)
-                    # increase score for the maximizer in the current state
+
+                    # Play the move (add the move to the sudoku board)
+                    state.board.put(legal_move.i, legal_move.j, legal_move.value)
+
+                    # Increase score for the maximizer in the current state
                     if state.scores:
                         if state.scores[1]:
                             state.scores[1] += minimizer_score_increase
@@ -281,23 +303,23 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                     else:
                         state.scores = [0, minimizer_score_increase]
 
-                    # call minimax for the maximizing player
+                    # Call minimax for the maximizing player
                     min_score = min(min_score, minimax(state, max_depth, depth+1, alpha, beta, True))
 
-                    # undo the move
+                    # Clear legal_move from the board to continue by checking other possible moves (recursion unrolling)
                     state.board.put(legal_move.i, legal_move.j, SudokuBoard.empty)
 
-                    # undo score increase
+                    # Undo the score increase to continue by checking other possible moves (recursion unrolling)
                     state.scores[1] -= minimizer_score_increase
 
                     beta = min(beta, min_score)
                     if beta <= alpha:
                         break
+
                 return min_score
         #################### End of helper functions ####################
 
-        # compute_best_move body
-        # filter out illegal moves AND taboo moves
+        # Filter out illegal moves AND taboo moves
         legal_moves = []
         for i in range(N):
             for j in range(N):
@@ -305,22 +327,21 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                     if possible(i, j, value) and value not in get_illegal_moves(i, j, game_state):
                        legal_moves.append(Move(i, j, value))
 
-        # propose a valid move arbitrarily at first (random choice from legal moves), 
-        # then try to optimize it with minimax and propose new moves as we still have time to do so
+        # Propose a valid move arbitrarily at first (random choice from legal moves),
+        # then keep finding optimal moves with minimax and propose them for as long as we are given the time to do so.
         move = random.choice(legal_moves)
         self.propose_move(move)
 
-        # initial depth 
+        # Initial Minimax search depth
         max_depth = 0
         while True:
-            # iteratively increase tree depth to produce more accurate moves
-            # on each iteration the move proposed should be slightly better than the move of the previous iteration
+            # Iteratively increase Minimax's tree depth to discover more optimal moves.
+            # On each iteration the move proposed should be slightly better than the move of the previous iteration.
             max_depth += 1
-            best_move = find_optimal_move(game_state, max_depth) # initial call to the recursive minimax function
-            #print("minimax proposed move: " + str(best_move))
+            best_move = find_optimal_move(game_state, max_depth)  # Initial call to the recursive minimax function
             if best_move != Move(-1, -1, -1):  # Failsafe mechanism to ensure we will never propose an invalid move
                 if self.verbose:
-                    # print statements for debug purposes
+                    # Print statements for debug purposes
                     print("--------------")
                     print("Random move proposed: " + str(best_move))
                     print("Score for selected legal_move: " + str(evaluate_move_score_increase(best_move, game_state)))
