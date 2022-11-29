@@ -147,10 +147,13 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             legal_moves = legal_moves_after_pruning(state, empty_cells)
            
             for legal_move in legal_moves:
-                # make the move
+                # calculate the amount by which the score of maximizing player will be increased if it plays legal_move
                 score_increase = evaluate_move_score_increase(state, legal_move)
+                # make the move
                 state.board.put(legal_move.i, legal_move.j,legal_move.value)
-               
+                # increase the score of the player at the current state
+                # the convention we used for score is that we store the score of maximizing player om state.scores[0] and 
+                # score of minimizing player on state.scores[1]
                 if state.scores:
                     if state.scores[0]:
                         state.scores[0] += score_increase
@@ -195,7 +198,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                     state.board.put(legal_move.i, legal_move.j,legal_move.value)
                     # in the scores property of the game state we can find the scores of the maximizing and minimizing players
                     # because our logic is based on difference of scores after moves
-                    # when plating a move we need to temporarily reflect its result on the score before continuing the search
+                    # when playing a move we need to temporarily reflect its result on the score before continuing the search
                     if state.scores:
                         if state.scores[0]:
                             state.scores[0] += maximizer_score_increase
