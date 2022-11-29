@@ -189,6 +189,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
 
             if is_maximizing_player:
                 # maximizer's move
+                # initialize max_score with the lowest possible supported value
                 max_score = -math.inf
                 
                 for legal_move in legal_moves:
@@ -223,12 +224,14 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                         break
                 return max_score
             else:
+                # minimizer's move
+                # initialize min_score with the highest possible supported value
                 min_score = math.inf
 
                 for legal_move in legal_moves:
                     minimizer_score_increase = evaluate_move_score_increase(state, legal_move)
                     state.board.put(legal_move.i, legal_move.j,legal_move.value)
-                    # increase score for the maximizer in the current state
+                    # increase score for the minimizer in the current state
                     if state.scores:
                         if state.scores[1]:
                             state.scores[1] += minimizer_score_increase
@@ -272,7 +275,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             # on each iteration the move proposed should be slightly better than the move of the previous iteration
             max_depth += 1
             best_move = find_optimal_move(game_state, max_depth) # initial call to the recursive minimax function
-            #print("minimax proposed move: " + str(best_move))
+
             if best_move != Move(-1, -1, -1):  # Failsafe mechanism to ensure we will never propose an invalid move
                 if self.verbose:
                     # print statements for debug purposes
