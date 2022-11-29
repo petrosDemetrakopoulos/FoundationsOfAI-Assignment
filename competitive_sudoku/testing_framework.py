@@ -6,7 +6,10 @@ import sys
 class Logger(object):
     def __init__(self):
         self.terminal = sys.stdout
-        self.log = open("logfile.log", "a")
+        log_file_name = "logfile.log"
+        if os.path.exists(log_file_name):
+            os.remove(log_file_name)
+        self.log = open(log_file_name, "a")
 
     def write(self, message):
         self.terminal.write(message)
@@ -130,24 +133,28 @@ if __name__ == '__main__':
     num_of_runs = 10
     num_of_threads = 10
     test_files_root_path = "./boards"
-    test_files_names = ["easy-2x2.txt",
-                      "easy-3x3.txt",
-                      "empty-2x2.txt",
-                      "empty-2x3.txt",
-                      "empty-3x3.txt",
-                      "empty-3x4.txt",
-                      "empty-4x4.txt",
-                      "hard-3x3.txt",
-                      "random-2x3.txt",
-                      "random-3x3.txt",
-                      "random-3x4.txt",
-                      "random-4x4.txt"]
-    test_files_names = ['empty-3x3.txt']
-
+    # test_files_names = ["easy-2x2.txt",
+    #                   "easy-3x3.txt",
+    #                   "empty-2x2.txt",
+    #                   "empty-2x3.txt",
+    #                   "empty-3x3.txt",
+    #                   "empty-3x4.txt",
+    #                   "empty-4x4.txt",
+    #                   "hard-3x3.txt",
+    #                   "random-2x3.txt",
+    #                   "random-3x3.txt",
+    #                   "random-3x4.txt",
+    #                   "random-4x4.txt"]
+    test_files_names = [
+        "hard-3x3.txt",
+        "random-2x3.txt",
+        "random-3x3.txt",
+        "random-3x4.txt",
+        "random-4x4.txt"]
     test_files_paths = [test_files_root_path + "/" + file_name for file_name in test_files_names]
 
     agent_1_name = "team09_A1"
-    agent_2_name = "greedy_player"
+    agent_2_name = "random_player"
     time_options = [0.1, 0.5, 1, 5]
 
     print(" \n     > Script Settings <")
