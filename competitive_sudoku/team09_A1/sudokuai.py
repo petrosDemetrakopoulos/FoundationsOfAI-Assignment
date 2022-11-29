@@ -254,7 +254,6 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
         # then try to optimize it with minimax and propose new moves as we still have time to do so
         move = random.choice(legal_moves)
         self.propose_move(move)
-        #print("random proposed:" + str(move))
 
         # initial depth 
         max_depth = 0

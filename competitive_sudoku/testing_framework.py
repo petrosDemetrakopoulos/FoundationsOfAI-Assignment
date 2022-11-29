@@ -142,12 +142,12 @@ if __name__ == '__main__':
                       "random-3x3.txt",
                       "random-3x4.txt",
                       "random-4x4.txt"]
-    test_files_names = ['empty-3x3.txt']
+    test_files_names = ['empty-4x4.txt']
 
     test_files_paths = [test_files_root_path + "/" + file_name for file_name in test_files_names]
 
     agent_1_name = "team09_A1"
-    agent_2_name = "greedy_player"
+    agent_2_name = "random_player"
     time_options = [0.1, 0.5, 1, 5]
 
     print(" \n     > Script Settings <")
