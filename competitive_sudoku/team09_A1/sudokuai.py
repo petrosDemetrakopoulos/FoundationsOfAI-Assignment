@@ -7,13 +7,11 @@ import math
 from competitive_sudoku.sudoku import GameState, Move, SudokuBoard, TabooMove
 import competitive_sudoku.sudokuai
 
-
 class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
     """
     Sudoku AI that computes a move for a given sudoku configuration.
     """
     verbose = False  # a flag to print useful debug logs after each turn
-
     def __init__(self):
         super().__init__()
 
@@ -42,14 +40,14 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
         def get_filled_region_values(row_index: int, column_index: int, state: GameState):
             # return the non-empty values of the rectangular block that the cell with coordinates
             # (row, column) belongs to
-            first_row = math.floor(row_index / state.board.m) * state.board.m
+            first_row = (row_index // state.board.m) * state.board.m
             # a smart way to find the first row of the rectangular region where the cell belongs to,
-            # is to round the row / m fraction to the lower closest integer (floor) and then multiply by m
+            # is to get the integer part of the row / m fraction (floor division) and then multiply by m
             # we do the same to distinguish the first column of the rectangular region in question respectively
-            first_column = math.floor(column_index / state.board.n) * state.board.n
+            first_column = (column_index // state.board.n) * state.board.n
             filled_values = []
-            for r in range(first_row, first_row + state.board.m):
-                for c in range(first_column, first_column + state.board.n):
+            for r in range(first_row, first_row + state.board.m): # if first_row is the index of the first row of the region, then the index of the last row should be first_row + state.board.m -1
+                for c in range(first_column, first_column + state.board.n): # if first_column is the index of the first column of the region, then the index of the last colum should be first_column + state.board.n -1
                     crn_cell = state.board.get(r, c)
                     if crn_cell != SudokuBoard.empty:
                         filled_values.append(crn_cell)
@@ -61,30 +59,28 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             illegal = get_filled_row_values(row_index, state) + get_filled_column_values(col_index, state) + get_filled_region_values(row_index, col_index, state)
             return set(illegal)  # easy way to remove duplicates 
 
-        def evaluate_state(state: GameState):
-            for row in range(state.board.m):
-                for col in range(state.board.n):
-                    filled_row = get_filled_row_values(row, state)
-                    filled_col = get_filled_column_values(col, state)
-                    filled_block = get_filled_region_values(row, col, state)
+        def evaluate_move_score_increase(state: GameState,move: Move):
+            filled_row = get_filled_row_values(move.i, state)
+            filled_col = get_filled_column_values(move.j, state)
+            filled_block = get_filled_region_values(move.i, move.j, state)
 
-                    full_len = N - 1
-                    # based onn the logic mentioned in the assignment desctiption, we calculate score increase after the move
-                    # case where a row, a column and a block are completed after the legal_move
-                    if len(filled_row) == full_len and len(filled_col) == full_len and len(filled_block) == full_len:
-                        return 7
-                    # case where a row and a column is completed
-                    elif len(filled_row) == full_len and len(filled_col) == full_len:
-                        return 3
-                    # case where a row and a block is completed
-                    elif len(filled_row) == full_len and len(filled_block) == full_len:
-                        return 3
-                    # case where a col and a block is completed
-                    elif len(filled_row) == full_len and len(filled_block) == full_len:
-                        return 3
-                    # case where only 1 among column, row and block are completed
-                    elif len(filled_row) == full_len or len(filled_col) == full_len or len(filled_block) == full_len:
-                        return 1
+            full_len = N - 1
+            # based onn the logic mentioned in the assignment desctiption, we calculate score increase after the move
+            # case where a row, a column and a block are completed after the legal_move
+            if len(filled_row) == full_len and len(filled_col) == full_len and len(filled_block) == full_len:
+                return 7
+            # case where a row and a column is completed
+            elif len(filled_row) == full_len and len(filled_col) == full_len:
+                return 3
+            # case where a row and a block is completed
+            elif len(filled_row) == full_len and len(filled_block) == full_len:
+                return 3
+            # case where a col and a block is completed
+            elif len(filled_row) == full_len and len(filled_block) == full_len:
+                return 3
+            # case where only 1 among column, row and block are completed
+            elif len(filled_row) == full_len or len(filled_col) == full_len or len(filled_block) == full_len:
+                return 1
             return 0
 
         def possible(row_index, column_index, proposed_value):
@@ -141,13 +137,25 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             legal_moves = legal_moves_after_pruning(state, empty_cells)
            
             for legal_move in legal_moves:
-                 # make the move
+                # make the move
+                score_increase = evaluate_move_score_increase(state, legal_move)
                 state.board.put(legal_move.i, legal_move.j,legal_move.value)
-
-                moveVal = minimax(state, max_depth, 0, -math.inf, math.inf, True)
+               
+                if state.scores:
+                    if state.scores[0]:
+                        state.scores[0] += score_increase
+                    else:
+                        state.scores[0] = score_increase
+                else:
+                    state.scores = [0,0]
+                    state.scores[0] += score_increase
+                moveVal = minimax(state, max_depth, 0, -math.inf, math.inf, False)
 
                 # clear legal_move from the board to continue by checking other possible moves
                 state.board.put(legal_move.i, legal_move.j, SudokuBoard.empty)
+
+                # undo score increase
+                state.scores[0] -= score_increase
 
                 if moveVal > max_score:
                     best_move = Move(legal_move.i, legal_move.j, legal_move.value)
@@ -155,16 +163,15 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             return best_move
 
         def minimax(state: GameState, max_depth: int, depth: int, alpha: float, beta: float, is_maximizing_player: bool):
-            score = evaluate_state(state)
-            if depth >= max_depth:
-                return evaluate_state(state)
-
             empty_cells = get_empty_cells(state)
-
             legal_moves = legal_moves_after_pruning(state, empty_cells)
+            if depth >= max_depth:
+                return state.scores[0] - state.scores[1]
+            
             if len(legal_moves) == 0:
                 # no legal moves left
-                return evaluate_state(state)
+                return state.scores[0] - state.scores[1]
+
             # estimate a maximum depth we are willing to search up to
             # this maximum depth is a function of the length of the legal moves and the numbers of moves that have already been played. 
             # This depth limiting technique is used because we noticed that under circumstances (low time limit) 
@@ -174,18 +181,31 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             # Thus we force the algorithm to search deeper as the game progresses
             estimated_depth_limit = math.ceil(0.1*(len(game_state.moves) / len(legal_moves)))
             if depth >= estimated_depth_limit:
-                return evaluate_state(state)
-            
+                return state.scores[0] - state.scores[1]
+
             if is_maximizing_player:
                 # maximizer's move
                 max_score = -math.inf
-
+                
                 for legal_move in legal_moves:
+                    maximizer_score_increase = evaluate_move_score_increase(state, legal_move)
                     state.board.put(legal_move.i, legal_move.j,legal_move.value)
-                    max_score = max(max_score, minimax(state, max_depth, depth+1, alpha, beta, not is_maximizing_player))
+            
+                    if state.scores:
+                        if state.scores[0]:
+                            state.scores[0] += maximizer_score_increase
+                        else:
+                            state.scores[0] = maximizer_score_increase
+                    else:
+                        state.scores = [maximizer_score_increase, 0]
+                        
+                    max_score = max(max_score, minimax(state, max_depth, depth+1, alpha, beta, False))
 
                     # undo the move
-                    state.board.put(legal_move.i, legal_move.j,SudokuBoard.empty)
+                    state.board.put(legal_move.i, legal_move.j, SudokuBoard.empty)
+
+                    # undo score increase
+                    state.scores[0] -= maximizer_score_increase
 
                     alpha = max(alpha, max_score)
                     if beta <= alpha:
@@ -195,11 +215,24 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                 min_score = math.inf
 
                 for legal_move in legal_moves:
+                    minimizer_score_increase = evaluate_move_score_increase(state, legal_move)
                     state.board.put(legal_move.i, legal_move.j,legal_move.value)
+            
+                    if state.scores:
+                        if state.scores[1]:
+                            state.scores[1] += minimizer_score_increase
+                        else:
+                            state.scores[1] = minimizer_score_increase
+                    else:
+                        state.scores = [0, minimizer_score_increase]
 
-                    min_score = min(min_score, minimax(state, max_depth, depth+1, alpha, beta, not is_maximizing_player))
+                    min_score = min(min_score, minimax(state, max_depth, depth+1, alpha, beta, True))
 
-                    state.board.put(legal_move.i, legal_move.j,SudokuBoard.empty)
+                    # undo the move
+                    state.board.put(legal_move.i, legal_move.j, SudokuBoard.empty)
+
+                    # undo score increase
+                    state.scores[1] -= minimizer_score_increase
 
                     beta = min(beta, min_score)
                     if beta <= alpha:
@@ -227,15 +260,14 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             # iteratively increase tree depth to produce more accurate moves
             # on each iteration the move proposed should be slightly better than the move of the previous iteration
             max_depth += 1
-            print("max_depth = " + str(max_depth))
             best_move = find_optimal_move(game_state, max_depth) # initial call to the recursive minimax function
-            print("minimax proposed move: " + str(best_move))
+            #print("minimax proposed move: " + str(best_move))
             if best_move != Move(-1, -1, -1):  # Failsafe mechanism to ensure we will never propose an invalid move
                 if self.verbose:
                     # print statements for debug purposes
                     print("--------------")
                     print("Random move proposed: " + str(best_move))
-                    print("Score for selected legal_move: " + str(evaluate_state(game_state)))
+                    print("Score for selected legal_move: " + str(evaluate_move_score_increase(game_state, best_move)))
                     print("Illegal moves for selected cell: " + str(get_illegal_moves(best_move.i, best_move.j, game_state)))
                     print("Block filled values for selected cell: " + str(get_filled_region_values(best_move.i, best_move.j, game_state)))
                     print("Row filled values for selected cell: " + str(get_filled_row_values(best_move.i, game_state)))
