@@ -59,7 +59,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             illegal = get_filled_row_values(row_index, state) + get_filled_column_values(col_index, state) + get_filled_region_values(row_index, col_index, state)
             return set(illegal)  # easy way to remove duplicates 
 
-        def evaluate_move_score_increase(state: GameState,move: Move):
+        def evaluate_move_score_increase(state: GameState, move: Move):
             filled_row = get_filled_row_values(move.i, state)
             filled_col = get_filled_column_values(move.j, state)
             filled_block = get_filled_region_values(move.i, move.j, state)
@@ -147,8 +147,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                     else:
                         state.scores[0] = score_increase
                 else:
-                    state.scores = [0,0]
-                    state.scores[0] += score_increase
+                    state.scores = [0,score_increase]
                 moveVal = minimax(state, max_depth, 0, -math.inf, math.inf, False)
 
                 # clear legal_move from the board to continue by checking other possible moves
