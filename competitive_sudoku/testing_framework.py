@@ -79,7 +79,7 @@ def run_game(player_1_name, player_2_name, time, board):
 
 
 def run_test_scenario(time_option, scenario_name, agent_1_name, agent_2_name, num_of_runs, num_of_threads):
-    print('*** TEST SESSION (Time: {}, Scenario: "{}") IN PROGRESS ***'.format(time_option, scenario_name))
+    print('*** TEST SESSION (Time: {}, Scenario: "{}", Agents: "{}", "{}") IN PROGRESS ***'.format(time_option, scenario_name, agent_1_name, agent_2_name))
 
     agent_1 = Agent(agent_1_name, True)
     agent_2 = Agent(agent_2_name, False)
@@ -147,7 +147,7 @@ if __name__ == '__main__':
     test_files_paths = [test_files_root_path + "/" + file_name for file_name in test_files_names]
 
     agent_1_name = "team09_A1"
-    agent_2_name = "random_player"
+    agent_2_name = "greedy_player"
     time_options = [0.1, 0.5, 1, 5]
 
     print(" \n     > Script Settings <")
