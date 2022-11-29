@@ -7,19 +7,27 @@ import math
 from competitive_sudoku.sudoku import GameState, Move, SudokuBoard, TabooMove
 import competitive_sudoku.sudokuai
 
+
 class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
     """
     Sudoku AI that computes a move for a given sudoku configuration.
     """
     verbose = False  # a flag to print useful debug logs after each turn
+
     def __init__(self):
         super().__init__()
 
     def compute_best_move(self, game_state: GameState) -> None:
         N = game_state.board.N
 
-        # helper functions
+        ################### Start of helper functions ###################
         def get_filled_row_values(row_index: int, state: GameState):
+            """
+            Returns the non-empty values of the row specified by a given row index.
+            @param row_index: The row index
+            @param state: The GameState object that describes the game in progress
+            @return: A list containing the integer values of the specified row's non-empty cells
+            """
             # returns non-empty values in row with index row_index
             filled_values = []
             for i in range(state.board.N):
@@ -29,7 +37,12 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             return filled_values
 
         def get_filled_column_values(column_index: int, state: GameState):
-            # returns non-empty values in column with index column_index
+            """
+            Returns the non-empty values of the column specified by a given column index.
+            @param column_index: The column index
+            @param state: The GameState object that describes the game in progress
+            @return: A list containing the integer values of the specified column's non-empty cells.
+            """
             filled_values = []
             for i in range(state.board.N):
                 cur_cell = state.board.get(i, column_index)
@@ -38,16 +51,26 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             return filled_values
 
         def get_filled_region_values(row_index: int, column_index: int, state: GameState):
-            # return the non-empty values of the rectangular block that the cell with coordinates
-            # (row, column) belongs to
+            """
+            Returns the non-empty values of the (rectangular) region that the cell specified
+            by the given row and column indices belongs to.
+            @param row_index: The row index
+            @param column_index: The column index
+            @param state: The GameState object that describes the game in progress
+            @return: A list containing the integer values of the specified region's non-empty cells
+            """
             first_row = (row_index // state.board.m) * state.board.m
-            # a smart way to find the first row of the rectangular region where the cell belongs to,
-            # is to get the integer part of the row / m fraction (floor division) and then multiply by m
-            # we do the same to distinguish the first column of the rectangular region in question respectively
+            # A smart way to determine the first row of the rectangular region where the cell belongs to,
+            # is to get the integer part of the (row / m) fraction (floor division) and then multiply it by m.
+            # The same logic is applied to determine the first column of the rectangular region in question.
             first_column = (column_index // state.board.n) * state.board.n
             filled_values = []
-            for r in range(first_row, first_row + state.board.m): # if first_row is the index of the first row of the region, then the index of the last row should be first_row + state.board.m -1
-                for c in range(first_column, first_column + state.board.n): # if first_column is the index of the first column of the region, then the index of the last colum should be first_column + state.board.n -1
+            # If first_row is the index of the first row of the region, then the index of the last row should be
+            # first_row + state.board.m - 1
+            for r in range(first_row, first_row + state.board.m):
+                # If first_column is the index of the first column of the region, then the index of the last column
+                # should be first_column + state.board.n - 1
+                for c in range(first_column, first_column + state.board.n):
                     crn_cell = state.board.get(r, c)
                     if crn_cell != SudokuBoard.empty:
                         filled_values.append(crn_cell)
@@ -247,6 +270,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                     if beta <= alpha:
                         break
                 return min_score
+        #################### End of helper functions ####################
 
         # compute_best_move body
         # filter out illegal moves AND taboo moves
