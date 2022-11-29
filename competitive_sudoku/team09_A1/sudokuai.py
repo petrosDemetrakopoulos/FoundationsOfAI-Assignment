@@ -81,6 +81,11 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             # case where only 1 among column, row and block are completed
             elif len(filled_row) == full_len or len(filled_col) == full_len or len(filled_block) == full_len:
                 return 1
+            elif len(filled_row) == full_len-1 or len(filled_col) == full_len-1 or len(filled_block) == full_len-1:
+                is_row_almost_filled = len(filled_row) == full_len-1
+                is_col_almost_filled = len(filled_col) == full_len-1
+                is_block_almost_filled = len(filled_block) == full_len-1
+                return -(is_row_almost_filled + is_col_almost_filled + is_block_almost_filled)*3
             return 0
 
         def possible(row_index, column_index, proposed_value):
@@ -164,22 +169,14 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
         def minimax(state: GameState, max_depth: int, depth: int, alpha: float, beta: float, is_maximizing_player: bool):
             empty_cells = get_empty_cells(state)
             legal_moves = legal_moves_after_pruning(state, empty_cells)
-            if depth >= max_depth:
+            if depth >= max_depth: 
+                # max depth reached, returning the score of the node
                 return state.scores[0] - state.scores[1]
             
             if len(legal_moves) == 0:
-                # no legal moves left
-                return state.scores[0] - state.scores[1]
-
-            # estimate a maximum depth we are willing to search up to
-            # this maximum depth is a function of the length of the legal moves and the numbers of moves that have already been played. 
-            # This depth limiting technique is used because we noticed that under circumstances (low time limit) 
-            # the proposed moves were mostly random because the recursive minimax function did not have enough time to return the optimal move
-            # the depth limit is given by the fraction (moves already played)/(legal moves the agent can play in the current state) multiplied by a constant
-            # this quantity is monotonically increasing as the game progresses
-            # Thus we force the algorithm to search deeper as the game progresses
-            estimated_depth_limit = math.ceil(0.1*(len(game_state.moves) / len(legal_moves)))
-            if depth >= estimated_depth_limit:
+                # no legal moves left, practically a leaf node
+                # the evaluation function of a node is the difference between the score of the maximizer at this state and the score of the minimizer at the same state
+                # this is the quantity that the minimax tries to maximize for maximizing player and minimize for the opponent
                 return state.scores[0] - state.scores[1]
 
             if is_maximizing_player:
@@ -187,9 +184,11 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                 max_score = -math.inf
                 
                 for legal_move in legal_moves:
+                    # calculate the amount by which the score of maximizing player will be increased if it plays legal_move
                     maximizer_score_increase = evaluate_move_score_increase(state, legal_move)
+                    # play the move (add the move on the board)
                     state.board.put(legal_move.i, legal_move.j,legal_move.value)
-            
+                    # increase score for the maximizer in the current state
                     if state.scores:
                         if state.scores[0]:
                             state.scores[0] += maximizer_score_increase
@@ -197,7 +196,8 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                             state.scores[0] = maximizer_score_increase
                     else:
                         state.scores = [maximizer_score_increase, 0]
-                        
+                    
+                    # call minimax for the minimizing player
                     max_score = max(max_score, minimax(state, max_depth, depth+1, alpha, beta, False))
 
                     # undo the move
@@ -206,6 +206,8 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                     # undo score increase
                     state.scores[0] -= maximizer_score_increase
 
+                    # implementation of the alpha-beta prunning technique as demonstrated on
+                    # https://www.geeksforgeeks.org/minimax-algorithm-in-game-theory-set-4-alpha-beta-pruning
                     alpha = max(alpha, max_score)
                     if beta <= alpha:
                         break
@@ -216,7 +218,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                 for legal_move in legal_moves:
                     minimizer_score_increase = evaluate_move_score_increase(state, legal_move)
                     state.board.put(legal_move.i, legal_move.j,legal_move.value)
-            
+                    # increase score for the maximizer in the current state
                     if state.scores:
                         if state.scores[1]:
                             state.scores[1] += minimizer_score_increase
@@ -225,6 +227,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                     else:
                         state.scores = [0, minimizer_score_increase]
 
+                    # call minimax for the maximizing player
                     min_score = min(min_score, minimax(state, max_depth, depth+1, alpha, beta, True))
 
                     # undo the move
@@ -251,10 +254,10 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
         # then try to optimize it with minimax and propose new moves as we still have time to do so
         move = random.choice(legal_moves)
         self.propose_move(move)
-        print("random proposed:" + str(move))
+        #print("random proposed:" + str(move))
 
         # initial depth 
-        max_depth = 0
+        max_depth = 2
         while True:
             # iteratively increase tree depth to produce more accurate moves
             # on each iteration the move proposed should be slightly better than the move of the previous iteration
