@@ -50,25 +50,25 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                     filled_values.append(cur_cell)
             return filled_values
 
-        def get_filled_region_values(row_index: int, column_index: int, state: GameState):
+        def get_filled_block_values(row_index: int, column_index: int, state: GameState):
             """
-            Returns the non-empty values of the (rectangular) region that the cell specified
+            Returns the non-empty values of the (rectangular) block that the cell specified
             by the given row and column indices belongs to.
             @param row_index: The row index
             @param column_index: The column index
             @param state: The GameState object that describes the game in progress
-            @return: A list containing the integer values of the specified region's non-empty cells
+            @return: A list containing the integer values of the specified block's non-empty cells
             """
             first_row = (row_index // state.board.m) * state.board.m
-            # A smart way to determine the first row of the rectangular region where the cell belongs to,
+            # A smart way to determine the first row of the rectangular block where the cell belongs to,
             # is to get the integer part of the (row / m) fraction (floor division) and then multiply it by m.
-            # The same logic is applied to determine the first column of the rectangular region in question.
+            # The same logic is applied to determine the first column of the rectangular block in question.
             first_column = (column_index // state.board.n) * state.board.n
             filled_values = []
-            # If first_row is the index of the first row of the region, then the index of the last row should be
+            # If first_row is the index of the first row of the block, then the index of the last row should be
             # first_row + state.board.m - 1
             for r in range(first_row, first_row + state.board.m):
-                # If first_column is the index of the first column of the region, then the index of the last column
+                # If first_column is the index of the first column of the block, then the index of the last column
                 # should be first_column + state.board.n - 1
                 for c in range(first_column, first_column + state.board.n):
                     crn_cell = state.board.get(r, c)
@@ -78,14 +78,14 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
 
         def get_illegal_moves(row_index: int, col_index: int, state: GameState):
             """
-            Returns a list of numbers that already exist in the specified cell's row, column or region. These numbers
+            Returns a list of numbers that already exist in the specified cell's row, column or block. These numbers
             are illegal values and CANNOT be put on the given empty cell.
             @param row_index: The empty cell's row index
             @param col_index: The empty cell's column index
             @param state: The GameState object that describes the game in progress
             @return: A list of integers representing the illegal values of the specified empty cell.
             """
-            illegal = get_filled_row_values(row_index, state) + get_filled_column_values(col_index, state) + get_filled_region_values(row_index, col_index, state)
+            illegal = get_filled_row_values(row_index, state) + get_filled_column_values(col_index, state) + get_filled_block_values(row_index, col_index, state)
             return set(illegal)  # Easy way to remove duplicates
 
         def evaluate_move_score_increase(move: Move, state: GameState):
@@ -97,25 +97,25 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             """
             filled_row = get_filled_row_values(move.i, state)
             filled_col = get_filled_column_values(move.j, state)
-            filled_block = get_filled_region_values(move.i, move.j, state)
+            filled_block = get_filled_block_values(move.i, move.j, state)
 
             full_len = N - 1
-            # Case where a row, a column and a region are completed after the proposed move is made
+            # Case where a row, a column and a block are completed after the proposed move is made
             if len(filled_row) == full_len and len(filled_col) == full_len and len(filled_block) == full_len:
                 return 7
             # Case where a row and a column are completed after the proposed move is made
             elif len(filled_row) == full_len and len(filled_col) == full_len:
                 return 3
-            # Case where a row and a region are completed after the proposed move is made
+            # Case where a row and a block are completed after the proposed move is made
             elif len(filled_row) == full_len and len(filled_block) == full_len:
                 return 3
-            # Case where a col and a region are completed after the proposed move is made
+            # Case where a col and a block are completed after the proposed move is made
             elif len(filled_row) == full_len and len(filled_block) == full_len:
                 return 3
-            # Case where only 1 among column, row and region are completed after the proposed move is made
+            # Case where only 1 among column, row and block are completed after the proposed move is made
             elif len(filled_row) == full_len or len(filled_col) == full_len or len(filled_block) == full_len:
                 return 1
-            # Case where either a row, a column, a region or a combination of them can be immediately filled during the
+            # Case where either a row, a column, a block or a combination of them can be immediately filled during the
             # next game turn, thus easily providing points to the opponent. Our intention is to introduce an artificial
             # "penalty" (not reflected in the final score of the game) for the proposal of such moves. This will force
             # the agent to avoid such moves, as they allow the opponent to immediately score points afterwards.
@@ -131,7 +131,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                    and not TabooMove(row_index, column_index, proposed_value) in game_state.taboo_moves
 
         def legal_moves_after_pruning(state, empty_cells):
-            # prune any cell that we have no info about it (region, row and column containing it are empty)
+            # prune any cell that we have no info about it (block, row and column containing it are empty)
             # the reasoning behind this pruning is that it is a bit naive to fill in cells for which we have no information and most probably there will be better options
             # this technique significantly reduces tree size and offers performance advantage
             # known_no_reward_cells list contains all empty cells except the ones that we have no info for
@@ -142,7 +142,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                     cell_index = cell[1]
                     if not (len(get_filled_row_values(row_index, state)) == 0 and
                             len(get_filled_column_values(cell_index, state)) == 0 and
-                            len(get_filled_region_values(row_index, cell_index, state)) == 0):
+                            len(get_filled_block_values(row_index, cell_index, state)) == 0):
                         known_no_reward_cells.append(cell)
             else:
                 # in case of an empty board, we assign empty_cells to known_no_reward_cells
@@ -357,7 +357,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                     print("Random move proposed: " + str(best_move))
                     print("Score for selected legal_move: " + str(evaluate_move_score_increase(best_move, game_state)))
                     print("Illegal moves for selected cell: " + str(get_illegal_moves(best_move.i, best_move.j, game_state)))
-                    print("Block filled values for selected cell: " + str(get_filled_region_values(best_move.i, best_move.j, game_state)))
+                    print("Block filled values for selected cell: " + str(get_filled_block_values(best_move.i, best_move.j, game_state)))
                     print("Row filled values for selected cell: " + str(get_filled_row_values(best_move.i, game_state)))
                     print("Column filled values for selected cell: " + str(get_filled_column_values(best_move.j, game_state)))
                     print("--------------")
