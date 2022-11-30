@@ -80,7 +80,6 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             """
             Returns a list of numbers that already exist in the specified cell's row, column or region. These numbers
             are illegal values and CANNOT be put on the given empty cell.
-            as they
             @param row_index: The empty cell's row index
             @param col_index: The empty cell's column index
             @param state: The GameState object that describes the game in progress
@@ -184,15 +183,14 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             @return: A Move object representing the best game move determined through Minimax's recursion
             """
             max_score = -math.inf
-            best_move = Move(-1, -1, -1)
             empty_cells = get_empty_cells(state)
-            
+            best_move = Move(-1,-1,-1)
             if len(empty_cells) == 0:
                 # game end, all cells are filled, practically reached a leaf node
                 return Move(-1, -1, -1)
 
             legal_moves = legal_moves_after_pruning(state, empty_cells)
-           
+
             for legal_move in legal_moves:
                 # Calculate the amount by which the score of the maximizing player will be increased if it plays legal_move
                 score_increase = evaluate_move_score_increase(legal_move, state)
@@ -234,6 +232,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             @return: The maximum maximizer-minimizer score difference achieved by the Minimax Algorithm
             """
             empty_cells = get_empty_cells(state)
+            # find out any legal moves we can do at the current game state
             legal_moves = legal_moves_after_pruning(state, empty_cells)
 
             if depth >= max_depth: 
