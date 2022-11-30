@@ -182,13 +182,18 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             @param max_depth: The maximum depth to be reached by Minimax's tree
             @return: A Move object representing the best game move determined through Minimax's recursion
             """
+             # Initialize max_score with the lowest possible supported value
             max_score = -math.inf
+            # find all empty cells
             empty_cells = get_empty_cells(state)
-            best_move = Move(-1,-1,-1)
+
             if len(empty_cells) == 0:
                 # game end, all cells are filled, practically reached a leaf node
                 return Move(-1, -1, -1)
 
+            # initialize best_move to an invalid move 
+            best_move = Move(-1,-1,-1)
+            # find all possible legal moves for the current game state
             legal_moves = legal_moves_after_pruning(state, empty_cells)
 
             for legal_move in legal_moves:
