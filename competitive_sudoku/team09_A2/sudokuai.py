@@ -33,6 +33,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             """
             # returns non-empty values in row with index row_index
             filled_values = []
+            start = time.time()
             for i in range_N:
                 cur_cell = state.board.get(row_index, i)
                 if cur_cell != SudokuBoard.empty:
@@ -225,7 +226,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
 
             return best_move
 
-        def get_greediest_move(state: GameState, legal_moves):
+        def get_greedy_move(state: GameState, legal_moves):
             max_move = legal_moves[0]
             max_score = -1
             for move in legal_moves:
@@ -344,7 +345,9 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
         legal_moves = [Move(i,j,value)  for i in range_N for j in range_N  for value in range_N_plus_1 if possible(i, j, value) and value not in get_illegal_moves(i, j, game_state)]
         # Propose a valid move arbitrarily at first (random choice from legal moves),
         # then keep finding optimal moves with minimax and propose them for as long as we are given the time to do so.
-        move = get_greediest_move(game_state, legal_moves)
+        rndm_move = random.choice(legal_moves)
+        self.propose_move(rndm_move)
+        move = get_greedy_move(game_state, legal_moves)
         self.propose_move(move)
 
         # Initial Minimax search depth
