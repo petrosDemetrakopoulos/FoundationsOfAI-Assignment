@@ -92,7 +92,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             illegal = get_filled_row_values(row_index, state) + get_filled_column_values(col_index, state) + get_filled_block_values(row_index, col_index, state)
             return set(illegal)  # Easy way to remove duplicates
 
-        def evaluate_move_score_increase(move: Move, state: GameState):
+        def evaluate_move_score_increase(move: Move, state: GameState, allow_recusion=True):
             """
             Calculates the score increase achieved after the proposed move is made.
             @param move: A Move object that describes the proposed move
@@ -104,31 +104,83 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             filled_block = get_filled_block_values(move.i, move.j, state)
 
             full_len = N - 1
+            score = 0
             # Case where a row, a column and a block are completed after the proposed move is made
             if len(filled_row) == full_len and len(filled_col) == full_len and len(filled_block) == full_len:
-                return 7
+                score = 7
             # Case where a row and a column are completed after the proposed move is made
             elif len(filled_row) == full_len and len(filled_col) == full_len:
-                return 3
+                score = 3
             # Case where a row and a block are completed after the proposed move is made
             elif len(filled_row) == full_len and len(filled_block) == full_len:
-                return 3
+                score = 3
             # Case where a col and a block are completed after the proposed move is made
             elif len(filled_row) == full_len and len(filled_block) == full_len:
-                return 3
+                score = 3
             # Case where only 1 among column, row and block are completed after the proposed move is made
             elif len(filled_row) == full_len or len(filled_col) == full_len or len(filled_block) == full_len:
-                return 1
+                score =  1
+            
             # Case where either a row, a column, a block or a combination of them can be immediately filled during the
             # next game turn, thus easily providing points to the opponent. Our intention is to introduce an artificial
             # "penalty" (not reflected in the final score of the game) for the proposal of such moves. This will force
             # the agent to avoid such moves, as they allow the opponent to immediately score points afterwards.
-            elif len(filled_row) == full_len-1 or len(filled_col) == full_len-1 or len(filled_block) == full_len-1:
-                is_row_almost_filled = len(filled_row) == full_len-1
-                is_col_almost_filled = len(filled_col) == full_len-1
-                is_block_almost_filled = len(filled_block) == full_len-1
-                return -3*(is_row_almost_filled + is_col_almost_filled + is_block_almost_filled)
-            return 0
+            is_row_almost_filled = len(filled_row) == full_len-1
+            is_col_almost_filled = len(filled_col) == full_len-1
+            is_block_almost_filled = len(filled_block) == full_len-1
+
+            # The allow recurstion parameter is needed so that we don't get stuck in an infinite loop.
+            # Essentially what this says is to not consider these rules when this function is called with the
+            # purpose of obtaining a score with which we decrease a score of the move we initially wanted to score
+            if allow_recusion:
+                if is_row_almost_filled:
+                    # Get missing value in row
+                    missing_value = list(set(range(1,full_len+2)) - set(filled_row))[0]
+                    empty_cell_index = [x for x in get_empty_cells(state) if x[0] == move.i][0]
+                    # Place move that is immediately available for point scoring
+                    state.board.put(empty_cell_index[0], empty_cell_index[1], missing_value)
+                    # Evaluate that move to check how many points it awards
+                    move_score = evaluate_move_score_increase(Move(empty_cell_index[0], empty_cell_index[1], missing_value), state, False)
+                    potential_row_move_points_lost = move_score
+                    # Remove move from board to return to original state
+                    state.board.put(empty_cell_index[0], empty_cell_index[1], SudokuBoard.empty)
+                else:
+                    potential_row_move_points_lost = 0
+
+                if is_col_almost_filled:
+                    # Get missing value in column
+                    missing_value = list(set(range(1,full_len+2)) - set(filled_col))[0]
+                    empty_cell_index = [x for x in get_empty_cells(state) if x[1] == move.j][0]
+                    # Place move that is immediately available for point scoring
+                    state.board.put(empty_cell_index[0], empty_cell_index[1], missing_value)
+                    # Evaluate that move to check how many points it awards
+                    move_score = evaluate_move_score_increase(Move(empty_cell_index[0], empty_cell_index[1], missing_value), state, False)
+                    potential_col_move_points_lost = move_score
+                    # Remove move from board to return to original state
+                    state.board.put(empty_cell_index[0], empty_cell_index[1], SudokuBoard.empty)
+                else:
+                    potential_col_move_points_lost = 0
+
+                if is_block_almost_filled:
+                    # Get missing value in block
+                    missing_value = list(set(range(1,full_len+2)) - set(filled_block))[0]
+                    
+                    first_row = (move.i // state.board.m) * state.board.m
+                    first_column = (move.j // state.board.n) * state.board.n
+                    empty_cell_index = [x for x in get_empty_cells(state) if x[0] in range(first_row, first_row + state.board.m) and x[1] in range(first_column, first_column + state.board.n)][0]
+                    # Place move that is immediately available for point scoring
+                    state.board.put(empty_cell_index[0], empty_cell_index[1], missing_value)
+                    # Evaluate that move to check how many points it awards
+                    move_score = evaluate_move_score_increase(Move(empty_cell_index[0], empty_cell_index[1], missing_value), state, False)
+                    potential_block_move_points_lost = move_score
+                    # Remove move from board to return to original state
+                    state.board.put(empty_cell_index[0], empty_cell_index[1], SudokuBoard.empty)
+                else:
+                    potential_block_move_points_lost = 0
+
+                score = score - max(potential_row_move_points_lost, potential_col_move_points_lost, potential_block_move_points_lost)
+                
+            return score
 
         def possible(row_index, column_index, proposed_value):
             return game_state.board.get(row_index, column_index) == SudokuBoard.empty \
