@@ -209,9 +209,10 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             # the resulting list contains all moves which are both possible and LEGAL
             legal_moves = []
             for coords in known_no_reward_cells:
-                for value in range(1, N + 1):
+                for value in range_N_plus_1:
                     if possible(coords[0], coords[1], value) and value not in get_illegal_moves(coords[0], coords[1], state):
                         legal_moves.append(Move(coords[0], coords[1], value))
+
             return legal_moves
 
         def get_empty_cells(state):
@@ -279,6 +280,13 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             return best_move
 
         def get_greedy_move(state: GameState, legal_moves):
+            """
+            Returns the move that awards the most points at the current state. 
+            If there are no moves awarding points, the first move of the list is returned arbitrarily.
+            @param state: The GameState object that describes the current state of the game in progress
+            @param legal_moces: All legal moves that can be performed given the current state of the game
+            @return: A Move object representing the move awarding the mpst points
+            """
             max_move = legal_moves[0]
             max_score = -1
             for move in legal_moves:
@@ -392,11 +400,11 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
 
                 return min_score
         #################### End of helper functions ####################
-
         # Filter out illegal moves AND taboo moves
         legal_moves = [Move(i,j,value)  for i in range_N for j in range_N  for value in range_N_plus_1 if possible(i, j, value) and value not in get_illegal_moves(i, j, game_state)]
         # Propose a valid move arbitrarily at first (random choice from legal moves),
         # then keep finding optimal moves with minimax and propose them for as long as we are given the time to do so.
+
         rndm_move = random.choice(legal_moves)
         self.propose_move(rndm_move)
         move = get_greedy_move(game_state, legal_moves)

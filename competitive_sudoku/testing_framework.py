@@ -130,8 +130,8 @@ def run_test_scenario(time_option, scenario_name, agent_1_name, agent_2_name, nu
 
 
 if __name__ == '__main__':
-    num_of_runs = 50
-    num_of_threads = 50
+    num_of_runs = 10
+    num_of_threads = 10
     test_files_root_path = "./boards"
     test_files_names = ["easy-2x2.txt",
                       "easy-3x3.txt",
