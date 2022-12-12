@@ -4,7 +4,6 @@
 
 import random
 import math
-import time
 from competitive_sudoku.sudoku import GameState, Move, SudokuBoard, TabooMove
 import competitive_sudoku.sudokuai
 
@@ -180,26 +179,6 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
         return game_state.board.get(row_index, column_index) == SudokuBoard.empty \
            and not TabooMove(row_index, column_index, proposed_value) in game_state.taboo_moves
 
-    def filter_useful_moves(self, candidate_moves, depth, game_state: GameState):
-        useful_moves = []
-        useless_moves = []  # Non-scoring moves
-        N = game_state.board.N
-
-        # Iterate through all candidate moves and filter out those that do NOT
-        # lead the player to scoring points
-        for move in candidate_moves:
-            if (len(self.get_filled_row_values(move.i, game_state)) >= N - depth
-                    or len(self.get_filled_column_values(move.j, game_state)) >= N - depth
-                    or len(self.get_filled_block_values(move.i, move.j, game_state)) >= N - depth):
-                useful_moves.append(move)
-            else:
-                useless_moves.append(move)
-        # In some cases (e.g., when all other moves result in losing points), it may be useful to make a non-scoring
-        # move. Therefore, a "useless" move is added to the list of "useful" moves.
-        # if len(useless_moves) > 0:
-        #     useful_moves.append(useless_moves[0])
-        return useful_moves
-
     def legal_moves_after_pruning(self, game_state: GameState, empty_cells):
         # prune any cell that we have no info about it (block, row and column containing it are empty)
         # the reasoning behind this pruning is that it is a bit naive to fill in cells for which we have no information and most probably there will be better options
@@ -207,13 +186,11 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
         # known_no_reward_cells list contains all empty cells except the ones that we have no info for
         known_no_reward_cells = []
         if not game_state.board.empty:
-            for cell in empty_cells:
-                row_index = cell[0]
-                cell_index = cell[1]
+            for (row_index, col_index) in empty_cells:
                 if not (len(self.get_filled_row_values(row_index, game_state)) == 0 and
-                        len(self.get_filled_column_values(cell_index, game_state)) == 0 and
-                        len(self.get_filled_block_values(row_index, cell_index, game_state)) == 0):
-                    known_no_reward_cells.append(cell)
+                        len(self.get_filled_column_values(col_index, game_state)) == 0 and
+                        len(self.get_filled_block_values(row_index, col_index, game_state)) == 0):
+                    known_no_reward_cells.append((row_index, col_index))
         else:
             # in case of an empty board, we assign empty_cells to known_no_reward_cells
             # otherwise the pruning would prune all cells
@@ -223,7 +200,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
         # the resulting list contains all moves which are both possible and LEGAL
         legal_moves = []
         for coords in known_no_reward_cells:
-            for value in range(1, game_state.board.N + 1):
+            for value in self.range_N_plus_1:
                 if self.is_possible(coords[0], coords[1], value, game_state) and value not in self.get_illegal_moves(coords[0], coords[1], game_state):
                     legal_moves.append(Move(coords[0], coords[1], value))
         return legal_moves
@@ -319,13 +296,13 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
         @param is_maximizing_player: A boolean flag indicating whether it is the maximizing player's turn to play
         @return: The maximum maximizer-minimizer score difference achieved by the Minimax Algorithm
         """
-        empty_cells = self.get_empty_cells(game_state)
-        # find out any legal moves we can do at the current game game_state
-        legal_moves = self.legal_moves_after_pruning(game_state, empty_cells)
-
         if depth >= max_depth: 
             # Max depth reached, returning the score of the node
             return game_state.scores[0] - game_state.scores[1]
+
+        empty_cells = self.get_empty_cells(game_state)
+        # find out any legal moves we can do at the current game game_state
+        legal_moves = self.legal_moves_after_pruning(game_state, empty_cells)
             
         if len(legal_moves) == 0:
             # No legal moves left, practically a leaf node The evaluation function of a node is the difference
@@ -428,6 +405,9 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
 
         rndm_move = random.choice(legal_moves)
         self.propose_move(rndm_move)
+
+        # propose a greedy move at first, as the game progresses, the less time it takes to be calculated because less cells are scanned, 
+        # thus leaving more time to minimax
         move = self.get_greedy_move(game_state, legal_moves)
         self.propose_move(move)
 
