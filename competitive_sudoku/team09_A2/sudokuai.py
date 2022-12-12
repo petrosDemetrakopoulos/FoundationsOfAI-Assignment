@@ -8,7 +8,6 @@ import time
 from competitive_sudoku.sudoku import GameState, Move, SudokuBoard, TabooMove
 import competitive_sudoku.sudokuai
 
-
 class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
     """
     Sudoku AI that computes a move for a given sudoku configuration.
@@ -133,9 +132,10 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             # Essentially what this says is to not consider these rules when this function is called with the
             # purpose of obtaining a score with which we decrease a score of the move we initially wanted to score
             if allow_recusion:
+                full_len_range = range(1,full_len+2)
                 if is_row_almost_filled:
                     # Get missing value in row
-                    missing_value = list(set(range(1,full_len+2)) - set(filled_row))[0]
+                    missing_value = list(set(full_len_range) - set(filled_row))[0]
                     empty_cell_index = [x for x in get_empty_cells(state) if x[0] == move.i][0]
                     # Place move that is immediately available for point scoring
                     state.board.put(empty_cell_index[0], empty_cell_index[1], missing_value)
@@ -149,7 +149,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
 
                 if is_col_almost_filled:
                     # Get missing value in column
-                    missing_value = list(set(range(1,full_len+2)) - set(filled_col))[0]
+                    missing_value = list(set(full_len_range) - set(filled_col))[0]
                     empty_cell_index = [x for x in get_empty_cells(state) if x[1] == move.j][0]
                     # Place move that is immediately available for point scoring
                     state.board.put(empty_cell_index[0], empty_cell_index[1], missing_value)
@@ -163,7 +163,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
 
                 if is_block_almost_filled:
                     # Get missing value in block
-                    missing_value = list(set(range(1,full_len+2)) - set(filled_block))[0]
+                    missing_value = list(set(full_len_range) - set(filled_block))[0]
                     
                     first_row = (move.i // state.board.m) * state.board.m
                     first_column = (move.j // state.board.n) * state.board.n
