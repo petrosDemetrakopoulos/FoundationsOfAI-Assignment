@@ -97,6 +97,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
         filled_row = self.get_filled_row_values(move.i, game_state)
         filled_col = self.get_filled_row_values(move.j, game_state)
         filled_block = self.get_filled_block_values(move.i, move.j, game_state)
+        
         full_len = self.N - 1
         score = 0
         # Case where a row, a column and a block are completed after the proposed move is made
@@ -127,10 +128,11 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
         # purpose of obtaining a score with which we decrease a score of the move we initially wanted to score
         if allow_recusion:
             full_len_range = range(1,full_len+2)
+            empty_cells = self.get_empty_cells(game_state)
             if is_row_almost_filled:
                 # Get missing value in row
                 missing_value = list(set(full_len_range) - set(filled_row))[0]
-                empty_cell_index = [x for x in self.get_empty_cells(game_state) if x[0] == move.i][0]
+                empty_cell_index = [x for x in empty_cells if x[0] == move.i][0]
                 # Place move that is immediately available for point scoring
                 game_state.board.put(empty_cell_index[0], empty_cell_index[1], missing_value)
                 # Evaluate that move to check how many points it awards
@@ -144,7 +146,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             if is_col_almost_filled:
                 # Get missing value in column
                 missing_value = list(set(full_len_range) - set(filled_col))[0]
-                empty_cell_index = [x for x in self.get_empty_cells(game_state) if x[1] == move.j][0]
+                empty_cell_index = [x for x in empty_cells if x[1] == move.j][0]
                 # Place move that is immediately available for point scoring
                 game_state.board.put(empty_cell_index[0], empty_cell_index[1], missing_value)
                 # Evaluate that move to check how many points it awards
@@ -161,7 +163,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                 
                 first_row = (move.i // game_state.board.m) * game_state.board.m
                 first_column = (move.j // game_state.board.n) * game_state.board.n
-                empty_cell_index = [x for x in self.get_empty_cells(game_state) if x[0] in range(first_row, first_row + game_state.board.m) and x[1] in range(first_column, first_column + game_state.board.n)][0]
+                empty_cell_index = [x for x in empty_cells if x[0] in range(first_row, first_row + game_state.board.m) and x[1] in range(first_column, first_column + game_state.board.n)][0]
                 # Place move that is immediately available for point scoring
                 game_state.board.put(empty_cell_index[0], empty_cell_index[1], missing_value)
                 # Evaluate that move to check how many points it awards
