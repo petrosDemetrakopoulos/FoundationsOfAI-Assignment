@@ -385,7 +385,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             return max_score
         else:
             # minimizer's move
-            # initialize min_score with the highest possible supported value
+            # Initialize min_score with the highest possible supported value
             min_score = math.inf
 
             for legal_move in legal_moves:
@@ -432,14 +432,15 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                     if self.is_possible(i, j, value, game_state) and value not in self.get_illegal_moves(i, j,
                                                                                                          game_state):
                         legal_moves.append(Move(i, j, value))
-        # Propose a valid move arbitrarily at first (random choice from legal moves),
-        # then keep finding optimal moves with minimax and propose them for as long as we are given the time to do so.
 
-        rndm_move = random.choice(legal_moves)
-        self.propose_move(rndm_move)
+        # Propose a valid move arbitrarily at first (random choice from legal moves), to make sure at least "some" move
+        # is proposed by our agent in the given time limit
+        random_move = random.choice(legal_moves)
+        self.propose_move(random_move)
 
-        # propose a greedy move at first, as the game progresses, the less time it takes to be calculated because less cells are scanned, 
-        # thus leaving more time to minimax
+        # Proceed to propose a "greedy" move. This is slower than proposing a random move, but faster than proposing
+        # a minimax move. As the game progresses, greedy moves take less time to be calculated because less cells are
+        # empty, thus leaving more time to minimax
         move = self.get_greedy_move(game_state, legal_moves)
         self.propose_move(move)
 
@@ -450,7 +451,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             # On each iteration the move proposed should be slightly better than the move of the previous iteration.
             max_depth += 1
             best_move = self.find_optimal_move(game_state, max_depth)  # Initial call to the recursive minimax function
-            if best_move != Move(-1, -1, -1):  # Failsafe mechanism to ensure we will never propose an invalid move
+            if best_move != Move(-1, -1, -1):  # Fail-safe mechanism to ensure we will never propose an invalid move
                 if self.verbose:
                     # Print statements for debug purposes
                     print("--------------")
