@@ -9,12 +9,12 @@
 --------------------------------------------
 > #Loaded Test Scenarios: 1
 
-./boards/empty-3x3.txt
+./boards/empty-2x3.txt
 --------------------------------------------
 
 
 =======================================================================================================
-*** TEST SESSION (Time: 0.1, Scenario: "./boards/empty-3x3.txt", Agents: "team09_A2", "greedy_player") IN PROGRESS ***
+*** TEST SESSION (Time: 0.1, Scenario: "./boards/empty-2x3.txt", Agents: "team09_A2", "team09_A1") IN PROGRESS ***
 > Finished running game 1 out of 10
 > Finished running game 2 out of 10
 > Finished running game 3 out of 10
@@ -25,25 +25,25 @@
 > Finished running game 8 out of 10
 > Finished running game 9 out of 10
 > Finished running game 10 out of 10
-*** RESULTS (Time: 0.1, Scenario: "./boards/empty-3x3.txt") ***
+*** RESULTS (Time: 0.1, Scenario: "./boards/empty-2x3.txt") ***
  
      > Overview <
 ----------------------
 > #Game Runs:  10
-> #team09_A2 Wins: 7
-> #greedy_player Wins: 3
-> #Draws:  0
+> #team09_A2 Wins: 4
+> #team09_A1 Wins: 5
+> #Draws:  1
 ----------------------
  
    > Win Rates (%) <
 ----------------------
-team09_A2: 70.00%
-greedy_player: 30.00%
+team09_A2: 40.00%
+team09_A1: 50.00%
 ----------------------
 
 =======================================================================================================
 =======================================================================================================
-*** TEST SESSION (Time: 0.5, Scenario: "./boards/empty-3x3.txt", Agents: "team09_A2", "greedy_player") IN PROGRESS ***
+*** TEST SESSION (Time: 0.5, Scenario: "./boards/empty-2x3.txt", Agents: "team09_A2", "team09_A1") IN PROGRESS ***
 > Finished running game 1 out of 10
 > Finished running game 2 out of 10
 > Finished running game 3 out of 10
@@ -54,49 +54,49 @@ greedy_player: 30.00%
 > Finished running game 8 out of 10
 > Finished running game 9 out of 10
 > Finished running game 10 out of 10
-*** RESULTS (Time: 0.5, Scenario: "./boards/empty-3x3.txt") ***
+*** RESULTS (Time: 0.5, Scenario: "./boards/empty-2x3.txt") ***
+ 
+     > Overview <
+----------------------
+> #Game Runs:  10
+> #team09_A2 Wins: 4
+> #team09_A1 Wins: 5
+> #Draws:  1
+----------------------
+ 
+   > Win Rates (%) <
+----------------------
+team09_A2: 40.00%
+team09_A1: 50.00%
+----------------------
+
+=======================================================================================================
+=======================================================================================================
+*** TEST SESSION (Time: 1, Scenario: "./boards/empty-2x3.txt", Agents: "team09_A2", "team09_A1") IN PROGRESS ***
+> Finished running game 1 out of 10
+> Finished running game 2 out of 10
+> Finished running game 3 out of 10
+> Finished running game 4 out of 10
+> Finished running game 5 out of 10
+> Finished running game 6 out of 10
+> Finished running game 7 out of 10
+> Finished running game 8 out of 10
+> Finished running game 9 out of 10
+> Finished running game 10 out of 10
+*** RESULTS (Time: 1, Scenario: "./boards/empty-2x3.txt") ***
  
      > Overview <
 ----------------------
 > #Game Runs:  10
 > #team09_A2 Wins: 6
-> #greedy_player Wins: 4
+> #team09_A1 Wins: 4
 > #Draws:  0
 ----------------------
  
    > Win Rates (%) <
 ----------------------
 team09_A2: 60.00%
-greedy_player: 40.00%
-----------------------
-
-=======================================================================================================
-=======================================================================================================
-*** TEST SESSION (Time: 1, Scenario: "./boards/empty-3x3.txt", Agents: "team09_A2", "greedy_player") IN PROGRESS ***
-> Finished running game 1 out of 10
-> Finished running game 2 out of 10
-> Finished running game 3 out of 10
-> Finished running game 4 out of 10
-> Finished running game 5 out of 10
-> Finished running game 6 out of 10
-> Finished running game 7 out of 10
-> Finished running game 8 out of 10
-> Finished running game 9 out of 10
-> Finished running game 10 out of 10
-*** RESULTS (Time: 1, Scenario: "./boards/empty-3x3.txt") ***
- 
-     > Overview <
-----------------------
-> #Game Runs:  10
-> #team09_A2 Wins: 8
-> #greedy_player Wins: 2
-> #Draws:  0
-----------------------
- 
-   > Win Rates (%) <
-----------------------
-team09_A2: 80.00%
-greedy_player: 20.00%
+team09_A1: 40.00%
 ----------------------
 
 =======================================================================================================
