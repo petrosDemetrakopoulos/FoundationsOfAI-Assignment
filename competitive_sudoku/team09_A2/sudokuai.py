@@ -134,8 +134,10 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             full_len_range = range(1, full_len + 2)
             empty_cells = self.get_empty_cells(game_state)
             if is_row_almost_filled:
-                # TODO: Make the following comment more comprehensive
-                # Get missing value in row
+                # Calculate which value is missing from the row under examination
+                # We do so by finding the difference between the sets containing all the nxm values that must be present in a complete row 
+                # and the set containing the values that are currently filled in the row
+                # we follow the same reasoning for columns and blocks in the following if statements
                 missing_value = list(set(full_len_range) - set(filled_row))[0]
                 empty_cell_index = [x for x in empty_cells if x[0] == move.i][0]
                 # Place move that is immediately available for point scoring
@@ -150,8 +152,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                 potential_row_move_points_lost = 0
 
             if is_col_almost_filled:
-                # TODO: Make the following comment more comprehensive
-                # Get missing value in column
+                # Calculate which value is missing from the collumn under examinationive
                 missing_value = list(set(full_len_range) - set(filled_col))[0]
                 empty_cell_index = [x for x in empty_cells if x[1] == move.j][0]
                 # Place move that is immediately available for point scoring
@@ -166,8 +167,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                 potential_col_move_points_lost = 0
 
             if is_block_almost_filled:
-                # TODO: Make the following comment more comprehensive
-                # Get missing value in block
+                # Calculate which value is missing from the column under examination
                 missing_value = list(set(full_len_range) - set(filled_block))[0]
 
                 first_row = (move.i // game_state.board.m) * game_state.board.m
