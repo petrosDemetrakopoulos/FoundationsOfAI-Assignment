@@ -127,9 +127,9 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
         is_col_almost_filled = len(filled_col) == full_len - 1
         is_block_almost_filled = len(filled_block) == full_len - 1
         # The "allow_recurstion" parameter is used to avoid getting stuck in an infinite loop.
-        # TODO: Make the following comment more comprehensive
-        # Essentially what this indicates is to not consider these rules when this function is called with the
-        # purpose of obtaining a score with which we decrease a score of the move we initially wanted to score
+        # This check of the allow recursion parameter is needed because when we evaluate our own moves
+        # and want to reason about the points the opponent can score with the next move
+        # we want to keep the heuristic out of the calculation and get the actual score the opponent can get
         if allow_recusion:
             full_len_range = range(1, full_len + 2)
             empty_cells = self.get_empty_cells(game_state)
