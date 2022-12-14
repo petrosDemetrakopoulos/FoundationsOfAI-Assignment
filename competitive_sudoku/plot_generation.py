@@ -53,4 +53,7 @@ def plot_chart(results, category_names):
 
 plot_chart(data, categories)
 
+def plot_line_chart():
+    
+
 plt.show()
