@@ -21,13 +21,13 @@ class TreeNode:
         self.is_player1 = is_player1
 
         self.n_value = 0  # Number of times the node has been visited
-        self.win_count = {"player1": 0, "player2": 0}
+        self.win_count = {"player1": 0, "player2": 0, "tie":0}
         self.unevaluated_moves = candidate_moves
         return
 
     def get_q_value(self):
-        p1_wins = self.win_count["p1"]
-        p1_loses = self.win_count["p2"]
+        p1_wins = self.win_count["player1"]
+        p1_loses = self.win_count["player2"]
 
         return p1_wins - p1_loses
 
@@ -66,15 +66,28 @@ class TreeNode:
             possible_moves = legal_moves_after_pruning(current_rollout_state, empty_cells)
             
             action = self.rollout_policy(possible_moves)
+
+            score_increase = self.evaluate_move_score_increase(
+                action, current_rollout_state)
+
             # note: probably needs deepcopy
             current_rollout_state.board.put(action.i, action.j, action.value)
+
+            if current_rollout_state.scores:
+                if current_rollout_state.scores[0]:
+                    current_rollout_state.scores[0] += score_increase
+                else:
+                    current_rollout_state.scores[0] = score_increase
+            else:
+                current_rollout_state.scores = [0, score_increase]
+
         # return game result, 1 if first player wins, 0 is tie, -1 is player 2 wins    
         if current_rollout_state.scores[0] > current_rollout_state.scores[1]:
-            return 1
+            return "player1"
         elif current_rollout_state.scores[1] > current_rollout_state.scores[0]:
-            return -1
+            return "player2"
         else:
-            return 0 #tie 
+            return "tie" 
     
     def backpropagate(self, result): # result shoud be either "player1" or "player2"
         self.n_value += 1.
@@ -89,7 +102,7 @@ class TreeNode:
         choices_weights = [(c.get_q_value() / c.get_n_value()) + c_param * np.sqrt((2 * np.log(self.get_n_value()) / c.get_n_value())) for c in self.children_nodes]
         return self.children[np.argmax(choices_weights)]
 
-    def _tree_policy(self):
+    def tree_policy(self):
         current_node = self
         while not current_node.is_terminal_node():
             
@@ -104,18 +117,11 @@ class TreeNode:
         num_simulations = 100
 
         for i in range(num_simulations):
-
-
-
-
-
-
-
-
-
-
-
-
+            v = self.tree_policy()
+            reward = v.rollout()
+            v.backpropagate(reward)
+	
+        return self.get_best_child(c_param=0.)
 
 
 
