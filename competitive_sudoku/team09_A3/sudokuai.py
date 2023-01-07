@@ -66,7 +66,12 @@ class TreeNode:
             action = self.rollout_policy(possible_moves)
             #current_rollout_state = current_rollout_state.move(action)
             current_rollout_state.board.put(action.i, action.j, action.value)
-        return current_rollout_state.scores
+        if current_rollout_state.scores[0] > current_rollout_state.scores[1]:
+            return 1
+        elif current_rollout_state.scores[1] > current_rollout_state.scores[0]:
+            return -1
+        else:
+            return 0 #tie 
         #return current_rollout_state.game_result()
 
 
