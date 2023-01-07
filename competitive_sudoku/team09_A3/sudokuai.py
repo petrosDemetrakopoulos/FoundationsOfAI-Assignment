@@ -54,6 +54,9 @@ class TreeNode:
     def rollout_policy(self, possible_moves):
         return possible_moves[np.random.randint(len(possible_moves))]
 
+    def is_terminal_node(self):
+        return len(get_empty_cells(current_rollout_state)) == 0
+
     def rollout(self):
         current_rollout_state = self.game_state
         empty_cells = get_empty_cells(current_rollout_state)
@@ -64,9 +67,9 @@ class TreeNode:
             possible_moves = legal_moves_after_pruning(current_rollout_state, empty_cells)
             
             action = self.rollout_policy(possible_moves)
-            #current_rollout_state = current_rollout_state.move(action)
             # note: probably needs deepcopy
             current_rollout_state.board.put(action.i, action.j, action.value)
+        # return game result, 1 if first player wins, 0 is tie, -1 is player 2 wins    
         if current_rollout_state.scores[0] > current_rollout_state.scores[1]:
             return 1
         elif current_rollout_state.scores[1] > current_rollout_state.scores[0]:
