@@ -65,6 +65,7 @@ class TreeNode:
             
             action = self.rollout_policy(possible_moves)
             #current_rollout_state = current_rollout_state.move(action)
+            # note: probably needs deepcopy
             current_rollout_state.board.put(action.i, action.j, action.value)
         if current_rollout_state.scores[0] > current_rollout_state.scores[1]:
             return 1
@@ -72,7 +73,6 @@ class TreeNode:
             return -1
         else:
             return 0 #tie 
-        #return current_rollout_state.game_result()
 
 
 
