@@ -23,7 +23,6 @@ class TreeNode:
         self.n_value = 0  # Number of times the node has been visited
         self.win_count = {"player1": 0, "player2": 0}
         self.unevaluated_moves = candidate_moves
-
         return
 
     def get_q_value(self):
@@ -55,7 +54,7 @@ class TreeNode:
         return possible_moves[np.random.randint(len(possible_moves))]
 
     def is_terminal_node(self):
-        return len(get_empty_cells(current_rollout_state)) == 0
+        return len(get_empty_cells(self.game_state)) == 0
 
     def rollout(self):
         current_rollout_state = self.game_state
@@ -76,16 +75,30 @@ class TreeNode:
             return -1
         else:
             return 0 #tie 
-
-
-
-
     
-    
-    # def backpropagate(self):
-    #
+    def backpropagate(self, result): # result shoud be either "player1" or "player2"
+        self.n_value += 1.
+        self.win_count[result] += 1.
+        if self.parent:
+            self.parent.backpropagate(result)
+
+    def is_fully_expanded(self):
+        return len(self.unevaluated_moves) == 0
 
     def get_best_child(self, c_param=0.1):
+        choices_weights = [(c.get_q_value() / c.get_n_value()) + c_param * np.sqrt((2 * np.log(self.get_n_value()) / c.get_n_value())) for c in self.children_nodes]
+        return self.children[np.argmax(choices_weights)]
+
+    def _tree_policy(self):
+        current_node = self
+        while not current_node.is_terminal_node():
+            
+            if not current_node.is_fully_expanded():
+                return current_node.expand_tree()
+            else:
+                current_node = current_node.get_best_child()
+        return current_node
+
     
     def find_best_move(self):
         num_simulations = 100
