@@ -11,13 +11,14 @@ import time
 
 # based on https://ai-boson.github.io/mcts/
 class TreeNode:
-    def __init__(self, game_state: GameState, parent_node, parent_move: Move, candidate_moves, num_empty_cells):
+    def __init__(self, game_state: GameState, parent_node, parent_move: Move, candidate_moves, num_empty_cells, is_player1=True):
         self.game_state = game_state
         self.parent_node = parent_node
         self.parent_move = parent_move
         self.children_nodes = []
         self.candidate_moves = candidate_moves
         self.num_empty_cells = num_empty_cells
+        self.is_player1 = is_player1
 
         self.n_value = 0  # Number of times the node has been visited
         self.win_count = {"player1": 0, "player2": 0}
@@ -44,13 +45,24 @@ class TreeNode:
         # Find any legal moves we can make at the current game_state
         updated_candidate_moves = legal_moves_after_pruning(new_game_state, updated_empty_cells)
 
-        child_node = TreeNode(new_game_state, self, new_move, updated_candidate_moves, self.num_empty_cells - 1)
+        child_node = TreeNode(new_game_state, self, new_move, updated_candidate_moves, self.num_empty_cells - 1, not self.is_player1)
+
+        self.children_nodes.append(child_node)
+
         return child_node
 
-    def rollout(self):
+    # def rollout(self):
+    #
+    #
+    # def backpropagate(self):
+    #
 
-    def backpropagate(self):
+    def get_best_child(self, c_param=0.1):
+    
+    def find_best_move(self):
+        num_simulations = 100
 
+        for i in range(num_simulations):
 
 
 
