@@ -51,9 +51,29 @@ class TreeNode:
 
         return child_node
 
-    # def rollout(self):
-    #
-    #
+    def rollout_policy(self, possible_moves):
+        return possible_moves[np.random.randint(len(possible_moves))]
+
+    def rollout(self):
+        current_rollout_state = self.game_state
+        empty_cells = get_empty_cells(current_rollout_state)
+        is_game_over = len(empty_cells) == 0
+    
+        while not is_game_over:
+            empty_cells = get_empty_cells(current_rollout_state)
+            possible_moves = legal_moves_after_pruning(current_rollout_state, empty_cells)
+            
+            action = self.rollout_policy(possible_moves)
+            #current_rollout_state = current_rollout_state.move(action)
+            current_rollout_state.board.put(action.i, action.j, action.value)
+        return current_rollout_state.scores
+        #return current_rollout_state.game_result()
+
+
+
+
+    
+    
     # def backpropagate(self):
     #
 
