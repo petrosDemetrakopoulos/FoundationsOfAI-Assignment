@@ -14,11 +14,11 @@ import time
 
 # based on https://ai-boson.github.io/mcts/
 class TreeNode:
-    def __init__(self, game_state: GameState, parent_node, move, candidate_moves, num_empty_cells,
+    def __init__(self, game_state: GameState, parent_node, parent_move, candidate_moves, num_empty_cells,
                  is_player1=True):
         self.game_state = game_state
         self.parent_node = parent_node
-        self.move = move
+        self.parent_move = parent_move
         self.children_nodes = []
         self.candidate_moves = candidate_moves
         self.num_empty_cells = num_empty_cells
@@ -172,7 +172,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             result = v.rollout()
             v.backpropagate(result)
 
-            best_move = root_node.get_best_child(c_param=0.1)
+            best_move = root_node.get_best_child(c_param=0.)
             self.propose_move(best_move)
 
     def compute_best_move(self, game_state: GameState) -> None:
