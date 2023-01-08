@@ -140,9 +140,9 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
 
     def __init__(self):
         super().__init__()
-        self.N = -1
-        self.range_N = range(self.N)
-        self.range_N_plus_1 = range(1, self.N + 1)
+        # self.N = -1
+        # self.range_N = range(self.N)
+        # self.range_N_plus_1 = range(1, self.N + 1)
 
     def get_greedy_move(self, game_state: GameState, legal_moves):
         """
@@ -177,13 +177,15 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
 
     def compute_best_move(self, game_state: GameState) -> None:
         # Filter out illegal moves AND taboo moves
-        self.N = game_state.board.N
-        self.range_N = range(game_state.board.N)
-        self.range_N_plus_1 = range(1, game_state.board.N + 1)
+        # self.N = game_state.board.N
+        # self.range_N = range(game_state.board.N)
+        # self.range_N_plus_1 = range(1, game_state.board.N + 1)
+        range_N = range(game_state.board.N)
+        range_N_plus_1 = range(1, game_state.board.N + 1)
         legal_moves = []
-        for i in self.range_N:
-            for j in self.range_N:
-                for value in self.range_N_plus_1:
+        for i in range_N:
+            for j in range_N:
+                for value in range_N_plus_1:
                     if is_possible(i, j, value, game_state) and value not in get_illegal_moves(i, j, game_state):
                         legal_moves.append(Move(i, j, value))
 
@@ -220,7 +222,7 @@ def get_filled_row_values(row_index: int, game_state: GameState):
     """
     # returns non-empty values in row with index row_index
     filled_values = []
-    for i in game_state.board.N:
+    for i in range(game_state.board.N):
         cur_cell = game_state.board.get(row_index, i)
         if cur_cell != SudokuBoard.empty:
             filled_values.append(cur_cell)
@@ -235,7 +237,7 @@ def get_filled_column_values(column_index: int, game_state: GameState):
     @return: A list containing the integer values of the specified column's non-empty cells.
     """
     filled_values = []
-    for i in game_state.board.N:
+    for i in range(game_state.board.N):
         cur_cell = game_state.board.get(i, column_index)
         if cur_cell != SudokuBoard.empty:
             filled_values.append(cur_cell)
@@ -325,7 +327,7 @@ def legal_moves_after_pruning(game_state: GameState, empty_cells):
     # The resulting list contains all moves which are both possible and LEGAL
     legal_moves = []
     for coords in known_no_reward_cells:
-        for value in game_state.board.N + 1:
+        for value in range(game_state.board.N + 1):
             if is_possible(coords[0], coords[1], value, game_state) and value not in get_illegal_moves(
                     coords[0], coords[1], game_state):
                 legal_moves.append(Move(coords[0], coords[1], value))
@@ -341,7 +343,8 @@ def get_empty_cells(game_state: GameState):
     """
     # Compute empty cells coordinates
     # These are the cells that the agent can probably fill
-    empty_cells = [(i, j) for i in game_state.board.N for j in game_state.board.N if
+    board_size = game_state.board.N
+    empty_cells = [(i, j) for i in range(board_size) for j in range(board_size) if
                    game_state.board.get(i, j) == SudokuBoard.empty]
     return empty_cells
 
