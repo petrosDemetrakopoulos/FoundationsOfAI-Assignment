@@ -56,6 +56,8 @@ class TreeNode:
         return child_node
 
     def select_random_move(self, possible_moves):
+        print("DIAG: " + str(len(possible_moves)))
+        # TODO: len(possible_moves) can become 0, causing error here!
         return possible_moves[np.random.randint(len(possible_moves))]
 
     def is_terminal_node(self):
