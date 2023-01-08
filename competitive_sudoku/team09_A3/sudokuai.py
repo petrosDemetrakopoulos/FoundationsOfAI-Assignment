@@ -112,6 +112,7 @@ class TreeNode:
         return len(self.unevaluated_moves) == 0
 
     def get_best_child(self, c_param=0.1):
+        # TODO: Tweak C parameter value?
         choices_weights = [
             (c.get_q_value() / c.get_n_value()) + c_param * np.sqrt((2 * np.log(self.get_n_value()) / c.get_n_value()))
             for c in self.children_nodes]
@@ -180,6 +181,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             result = v.rollout()
             v.backpropagate(result)
 
+            # TODO: Tweak C parameter value?
             best_move = root_node.get_best_child(c_param=0.).get_parent_move()
             self.propose_move(best_move)
 
@@ -216,7 +218,8 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
         self.propose_move(move)
 
         # Monte Carlo Search Tree
-        num_simulations = 100
+        # TODO: Should the number of simulations change dynamically?
+        num_simulations = 1000000
         self.monte_carlo_tree_search(game_state, legal_moves, num_simulations)
 
 
