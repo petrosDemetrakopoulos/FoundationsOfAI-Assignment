@@ -38,6 +38,9 @@ class TreeNode:
     def get_n_value(self):
         return self.n_value
 
+    def get_parent_move(self):
+        return self.parent_move
+
     def expand_tree(self):
         new_move = self.unevaluated_moves.pop()  # Choose a random unevaluated move to evaluate
 
@@ -64,34 +67,37 @@ class TreeNode:
         return len(get_empty_cells(self.game_state)) == 0
 
     def rollout(self):
-        current_rollout_state = self.game_state
-        empty_cells = get_empty_cells(current_rollout_state)
-        is_game_over = len(empty_cells) == 0
+        # TODO: The termination condition is wrong
+        # TODO: probably needs deepcopy
+        rollout_game_state = copy.deepcopy(self.game_state)
+        # empty_cells = get_empty_cells(rollout_game_state)
+        # is_game_over = len(empty_cells) == 0
 
-        while not is_game_over:
-            empty_cells = get_empty_cells(current_rollout_state)
-            possible_moves = legal_moves_after_pruning(current_rollout_state, empty_cells)
+        # while not is_game_over:
+        while len(get_empty_cells(rollout_game_state)) != 0:
+            empty_cells = get_empty_cells(rollout_game_state)
+            possible_moves = legal_moves_after_pruning(rollout_game_state, empty_cells)
 
+            print("DIAG - Empty cells: " + str(len(empty_cells)))
             selected_move = self.select_random_move(possible_moves)
 
             # TODO: Should "allow recursion" be true here?
-            score_increase = evaluate_move_score_increase(selected_move, current_rollout_state)
+            score_increase = evaluate_move_score_increase(selected_move, rollout_game_state)
 
-            # TODO: probably needs deepcopy
-            current_rollout_state.board.put(selected_move.i, selected_move.j, selected_move.value)
+            rollout_game_state.board.put(selected_move.i, selected_move.j, selected_move.value)
 
-            if current_rollout_state.scores:
-                if current_rollout_state.scores[0]:
-                    current_rollout_state.scores[0] += score_increase
+            if rollout_game_state.scores:
+                if rollout_game_state.scores[0]:
+                    rollout_game_state.scores[0] += score_increase
                 else:
-                    current_rollout_state.scores[0] = score_increase
+                    rollout_game_state.scores[0] = score_increase
             else:
-                current_rollout_state.scores = [0, score_increase]
+                rollout_game_state.scores = [0, score_increase]
 
         # return game result
-        if current_rollout_state.scores[0] > current_rollout_state.scores[1]:
+        if rollout_game_state.scores[0] > rollout_game_state.scores[1]:
             return "player1"
-        elif current_rollout_state.scores[1] > current_rollout_state.scores[0]:
+        elif rollout_game_state.scores[1] > rollout_game_state.scores[0]:
             return "player2"
         else:
             return "tie"
@@ -174,7 +180,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             result = v.rollout()
             v.backpropagate(result)
 
-            best_move = root_node.get_best_child(c_param=0.)
+            best_move = root_node.get_best_child(c_param=0.).get_parent_move()
             self.propose_move(best_move)
 
     def compute_best_move(self, game_state: GameState) -> None:
