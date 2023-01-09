@@ -25,13 +25,13 @@ class TreeNode:
         self.is_player1 = is_player1
 
         self.n_value = 0  # Number of times the node has been visited
-        self.win_count = {"player1": 0, "player2": 0, "tie": 0}
+        self.win_count = [0, 0]
         self.unevaluated_moves = candidate_moves
         return
 
     def get_q_value(self):
-        p1_wins = self.win_count["player1"]
-        p1_loses = self.win_count["player2"]
+        p1_wins = self.win_count[0]
+        p1_loses = self.win_count[1]
 
         return p1_wins - p1_loses
 
@@ -42,7 +42,19 @@ class TreeNode:
         return self.parent_move
 
     def expand_tree(self):
+        # Pick the next move from the unevaluated moves list
         new_move = self.unevaluated_moves.pop()  # Choose a random unevaluated move to evaluate
+        # Calculate the new move's score
+        new_move_score = evaluate_move_score_increase(new_move, self.game_state)
+
+        ### FIX: Calculate move score here (self.eval) and store it (game_state copy)
+        # to pass it to the new child_node
+        # print("DIAG1 before: ", self.game_state.scores)
+        if self.is_player1:
+            self.game_state.scores[0] += new_move_score
+        else:
+            self.game_state.scores[1] += new_move_score
+        # print("DIAG1 after: ", self.game_state.scores)
 
         new_game_state = copy.deepcopy(self.game_state)  # Create a copy of the current game state
         new_game_state.board.put(new_move.i, new_move.j, new_move.value)  # Make the new move on the new game state
@@ -59,7 +71,7 @@ class TreeNode:
         return child_node
 
     def select_random_move(self, possible_moves):
-        print("DIAG: " + str(len(possible_moves)))
+        # print("DIAG: " + str(len(possible_moves)))
         # TODO: len(possible_moves) can become 0, causing error here!
         return possible_moves[np.random.randint(len(possible_moves))]
 
@@ -69,49 +81,66 @@ class TreeNode:
     def rollout(self):
         # TODO: The termination condition is wrong
         # TODO: probably needs deepcopy
+        # The simulation (rollout) starts one level below the current node (next move), therefore
+        # we change the player flag to indicate that it is the next player's turn
+        is_player1 = not self.is_player1
         rollout_game_state = copy.deepcopy(self.game_state)
-        # empty_cells = get_empty_cells(rollout_game_state)
-        # is_game_over = len(empty_cells) == 0
+        available_moves = self.candidate_moves
+
+        ### FIX: The total score of the game during the simulation
+        # (rollout) steps should be saved somewhere -> GameState.scores
 
         # while not is_game_over:
-        while len(get_empty_cells(rollout_game_state)) != 0:
-            empty_cells = get_empty_cells(rollout_game_state)
-            possible_moves = legal_moves_after_pruning(rollout_game_state, empty_cells)
-
-            print("DIAG - Empty cells: " + str(len(empty_cells)))
-            selected_move = self.select_random_move(possible_moves)
+        while available_moves:
+            # Select a random move from the available moves
+            selected_move = self.select_random_move(available_moves)
 
             # TODO: Should "allow recursion" be true here?
-            score_increase = evaluate_move_score_increase(selected_move, rollout_game_state)
+            # Calculate the selected move's score
+            selected_move_score = evaluate_move_score_increase(selected_move, rollout_game_state)
 
+            # "Play" the move on the board
             rollout_game_state.board.put(selected_move.i, selected_move.j, selected_move.value)
 
-            if rollout_game_state.scores:
-                if rollout_game_state.scores[0]:
-                    rollout_game_state.scores[0] += score_increase
-                else:
-                    rollout_game_state.scores[0] = score_increase
+            print("DIAG3 before: ", rollout_game_state.scores)
+            # Update the saved score for the player that is currently playing
+            if is_player1:
+                rollout_game_state.scores[0] += selected_move_score
             else:
-                rollout_game_state.scores = [0, score_increase]
+                rollout_game_state.scores[1] += selected_move_score
+            print("DIAG4 before: ", rollout_game_state.scores)
 
-        # return game result
-        if rollout_game_state.scores[0] > rollout_game_state.scores[1]:
-            return "player1"
-        elif rollout_game_state.scores[1] > rollout_game_state.scores[0]:
-            return "player2"
-        else:
-            return "tie"
+            # Change the player order flag to the next player
+            is_player1 = not is_player1
+
+            # Update the available moves
+            empty_cells = get_empty_cells(rollout_game_state)
+            available_moves = legal_moves_after_pruning(rollout_game_state, empty_cells)
+
+        #### FIX: Return score result instead on win result here!
+        # TODO: Should unsolvable board states be taken into consideration here (check sample code)?
+        return rollout_game_state.scores
 
     def backpropagate(self, result):  # result should be "player1", "player2" or "tie"
         self.n_value += 1.
-        self.win_count[result] += 1.
+        ### FIX: Check total game score here and determine win_count change this way
+        # for the player currently playing, the score is current_player_score += result
+
+        # Check which player has the most turn wins based on the provided result
+        if result[0] > result[1]:
+            # Player1 has the most wins
+            self.win_count[0] += 1
+        elif result[1] > result[0]:
+            self.win_count[1] += 1
+
+        # If a parent node exists (current node is NOT root), backpropagate the result
         if self.parent_node:
             self.parent_node.backpropagate(result)
 
     def is_fully_expanded(self):
         return len(self.unevaluated_moves) == 0
 
-    def get_best_child(self, c_param=0.1):
+    def get_best_child(self, c_param=3):
         # TODO: Tweak C parameter value?
         choices_weights = [
             (c.get_q_value() / c.get_n_value()) + c_param * np.sqrt((2 * np.log(self.get_n_value()) / c.get_n_value()))
@@ -182,14 +211,15 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             v.backpropagate(result)
 
             # TODO: Tweak C parameter value?
-            best_move = root_node.get_best_child(c_param=0.).get_parent_move()
+            best_move = root_node.get_best_child(c_param=3).get_parent_move()
             self.propose_move(best_move)
 
     def compute_best_move(self, game_state: GameState) -> None:
+        # TODO: New addition!
+        # Initialize GameState.scores with 0 for both players
+        game_state.scores = [0, 0]
+
         # Filter out illegal moves AND taboo moves
-        # self.N = game_state.board.N
-        # self.range_N = range(game_state.board.N)
-        # self.range_N_plus_1 = range(1, game_state.board.N + 1)
         range_N = range(game_state.board.N)
         range_N_plus_1 = range(1, game_state.board.N + 1)
         legal_moves = []
