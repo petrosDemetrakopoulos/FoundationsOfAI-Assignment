@@ -191,6 +191,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
 
     def __init__(self):
         super().__init__()
+        self.move_skipped = False
         # self.N = -1
         # self.range_N = range(self.N)
         # self.range_N_plus_1 = range(1, self.N + 1)
@@ -227,7 +228,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             best_move = root_node.get_best_child(c_param=2).get_parent_move()
             self.propose_move(best_move)
 
-    def get_skip_move(legal_moves: list, game_state: GameState):
+    def get_skip_move(self, legal_moves: list, game_state: GameState):
         # iterate rows to find potential move than can force the agent to "skip" the move
         
         for i in range(game_state.board.N):
