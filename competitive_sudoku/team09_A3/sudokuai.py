@@ -237,6 +237,50 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             best_move = root_node.get_best_child(c_param=3).get_parent_move()
             self.propose_move(best_move)
 
+    def get_skip_move(legal_moves: list, game_state: GameState):
+        # iterate rows to find potential move than can force the agent to "skip" the move
+        
+        for i in range(game_state.board.N):
+            available_moves_in_row = [move for move in legal_moves if move.i == i]
+            available_cells_in_row = list(set([move.j for move in available_moves_in_row]))
+            moves_per_cell = {col_index : [] for col_index in available_cells_in_row}
+            for move in available_moves_in_row:
+                moves_per_cell[move.j].append(move.value)
+            non_ambiguous_value = None
+            for col_index, moves_list in moves_per_cell.items():
+                if len(moves_list) == 1:
+                    non_ambiguous_value = moves_list[0]
+
+            if non_ambiguous_value is not None:
+                # If a cell in the row can contain only a single value
+                # but another cell from the row can also have it
+                # then it means that putting it in the latter one will result in an unsolvable sudoku
+                # we want to propose that move in order to "skip" the turn
+                for col_index, moves_list in moves_per_cell.items():
+                    if len(moves_list) > 1 and non_ambiguous_value in moves_list:
+                        return Move(i, col_index, non_ambiguous_value)  
+        for j in range(0,game_state.board.N):
+            available_moves_in_col = [move for move in legal_moves if move.j == j]
+            available_cells_in_col = list(set([move.i for move in available_moves_in_col]))
+            moves_per_cell = {row_index : [] for row_index in available_cells_in_col}
+            for move in available_moves_in_col:
+                moves_per_cell[move.i].append(move.value)
+            non_ambiguous_value = None
+            for row_index, moves_list in moves_per_cell.items():
+                if len(moves_list) == 1:
+                    non_ambiguous_value = moves_list[0]
+
+            if non_ambiguous_value is not None:
+                # If a cell in the row can contain only a single value
+                # but another cell from the row can also have it
+                # then it means that putting it in the latter one will result in an unsolvable sudoku
+                # we want to propose that move in order to "skip" the turn
+                for row_index, moves_list in moves_per_cell.items():
+                    if len(moves_list) > 1 and non_ambiguous_value in moves_list:
+                        return Move(row_index, j, non_ambiguous_value)
+        
+        return None
+
     def compute_best_move(self, game_state: GameState) -> None:
         # TODO: New addition!
         # Initialize GameState.scores with 0 for both players
@@ -270,10 +314,19 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
         move = self.get_greedy_move(game_state, legal_moves)
         self.propose_move(move)
 
-        # Monte Carlo Search Tree
-        # TODO: Should the number of simulations change dynamically?
-        num_simulations = 1000000
-        self.monte_carlo_tree_search(game_state, legal_moves, num_simulations)
+        empty_cells_count = len(get_empty_cells(game_state))
+
+        if empty_cells_count % 2 == 0:
+            skip_move = self.get_skip_move(legal_moves, game_state)
+            if skip_move is not None:
+                self.propose_move(skip_move)
+                self.move_skipped = True
+        
+        if not self.move_skipped:
+            # Monte Carlo Search Tree
+            # TODO: Should the number of simulations change dynamically?
+            num_simulations = 1000000
+            self.monte_carlo_tree_search(game_state, legal_moves, num_simulations)
 
 
 ###### Start of helper functions ######
