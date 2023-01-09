@@ -88,11 +88,19 @@ class TreeNode:
             final_list.append(i)
         return final_list
 
-    def select_random_move(self, possible_moves):
+    def select_random_move(self, possible_moves, game_state):
         # print("DIAG: " + str(len(possible_moves)))
         # TODO: len(possible_moves) can become 0, causing error here!
-
-        return possible_moves[np.random.randint(len(possible_moves))]
+        scores = [evaluate_move_score_increase(move, game_state) for move in possible_moves]
+        moves = [
+            elem[1]
+            for elem in sorted(zip(scores, possible_moves), key=lambda tup: tup[0])
+        ]
+        moves.reverse()
+        if len(moves) >= 5:
+            moves = moves[:5]
+    
+        return moves[np.random.randint(len(moves))]
 
     def is_terminal_node(self):
         return len(get_empty_cells(self.game_state)) == 0
@@ -102,7 +110,7 @@ class TreeNode:
         # TODO: probably needs deepcopy
         # The simulation (rollout) starts one level below the current node (next move), therefore
         # we change the player flag to indicate that it is the next player's turn
-        is_player1 = not self.is_player1
+        is_opponent = not self.is_player1
         rollout_game_state = copy.deepcopy(self.game_state)
         available_moves = self.candidate_moves
 
@@ -112,7 +120,7 @@ class TreeNode:
         # while not is_game_over:
         while available_moves:
             # Select a random move from the available moves
-            selected_move = self.select_random_move(available_moves)
+            selected_move = self.select_random_move(available_moves, game_state=rollout_game_state)
 
             # TODO: Should "allow recursion" be true here?
             # Calculate the selected move's score
@@ -123,14 +131,14 @@ class TreeNode:
 
             #print("DIAG3 before: ", rollout_game_state.scores)
             # Update the saved score for the player that is currently playing
-            if is_player1:
+            if is_opponent:
                 rollout_game_state.scores[1] += selected_move_score
             else:
                 rollout_game_state.scores[0] += selected_move_score
             #print("DIAG4 before: ", rollout_game_state.scores)
 
             # Change the player order flag to the next player
-            is_player1 = not is_player1
+            is_opponent = not is_opponent
 
             # Update the available moves
             empty_cells = get_empty_cells(rollout_game_state)
