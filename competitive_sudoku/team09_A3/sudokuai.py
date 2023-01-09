@@ -14,16 +14,14 @@ import time
 
 # based on https://ai-boson.github.io/mcts/
 class TreeNode:
-    def __init__(self, game_state: GameState, parent_node, parent_move, candidate_moves, num_empty_cells,
-                 is_player1=True,crn_state_score=0):
+    def __init__(self, game_state: GameState, parent_node, parent_move, candidate_moves, num_empty_cells, is_our_turn=True):
         self.game_state = game_state
         self.parent_node = parent_node
         self.parent_move = parent_move
         self.children_nodes = []
         self.candidate_moves = candidate_moves
         self.num_empty_cells = num_empty_cells
-        self.is_player1 = is_player1
-        self.crn_state_score = crn_state_score
+        self.is_our_turn = is_our_turn
 
         self.n_value = 0  # Number of times the node has been visited
         self.win_count = [0, 0]
@@ -51,7 +49,7 @@ class TreeNode:
         ### FIX: Calculate move score here (self.eval) and store it (game_state copy)
         # to pass it to the new child_node
         # print("DIAG1 before: ", self.game_state.scores)
-        if self.is_player1:
+        if self.is_our_turn:
             self.game_state.scores[0] += new_move_score
         else:
             self.game_state.scores[1] += new_move_score
@@ -65,7 +63,7 @@ class TreeNode:
         updated_candidate_moves = legal_moves_after_pruning(new_game_state, updated_empty_cells)
 
         child_node = TreeNode(new_game_state, self, new_move, updated_candidate_moves, self.num_empty_cells - 1,
-                              not self.is_player1)
+                              not self.is_our_turn)
 
         self.children_nodes.append(child_node)
 
@@ -89,8 +87,6 @@ class TreeNode:
         return final_list
 
     def select_random_move(self, possible_moves, game_state):
-        # print("DIAG: " + str(len(possible_moves)))
-        # TODO: len(possible_moves) can become 0, causing error here!
         scores = [evaluate_move_score_increase(move, game_state) for move in possible_moves]
         moves = [
             elem[1]
@@ -110,7 +106,7 @@ class TreeNode:
         # TODO: probably needs deepcopy
         # The simulation (rollout) starts one level below the current node (next move), therefore
         # we change the player flag to indicate that it is the next player's turn
-        is_opponent = not self.is_player1
+        is_our_turn = not self.is_our_turn
         rollout_game_state = copy.deepcopy(self.game_state)
         available_moves = self.candidate_moves
 
@@ -131,14 +127,14 @@ class TreeNode:
 
             #print("DIAG3 before: ", rollout_game_state.scores)
             # Update the saved score for the player that is currently playing
-            if is_opponent:
-                rollout_game_state.scores[1] += selected_move_score
-            else:
+            if is_our_turn:
                 rollout_game_state.scores[0] += selected_move_score
+            else:
+                rollout_game_state.scores[1] += selected_move_score
             #print("DIAG4 before: ", rollout_game_state.scores)
 
             # Change the player order flag to the next player
-            is_opponent = not is_opponent
+            is_our_turn = not is_our_turn
 
             # Update the available moves
             empty_cells = get_empty_cells(rollout_game_state)
