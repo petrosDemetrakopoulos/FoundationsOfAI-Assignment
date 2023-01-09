@@ -283,17 +283,14 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             return best_move
         
         def get_skip_move(legal_moves: list, game_state: GameState):
-            print("DEBA")
             # iterate rows to find potential move than can force the agent to "skip" the move
             
             for i in range(game_state.board.N):
-                print("deba")
                 available_moves_in_row = [move for move in legal_moves if move.i == i]
                 available_cells_in_row = list(set([move.j for move in available_moves_in_row]))
                 moves_per_cell = {col_index : [] for col_index in available_cells_in_row}
                 for move in available_moves_in_row:
                     moves_per_cell[move.j].append(move.value)
-                print(moves_per_cell)
                 non_ambiguous_value = None
                 for col_index, moves_list in moves_per_cell.items():
                     if len(moves_list) == 1:
@@ -313,7 +310,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                 moves_per_cell = {row_index : [] for row_index in available_cells_in_col}
                 for move in available_moves_in_col:
                     moves_per_cell[move.i].append(move.value)
-                print(moves_per_cell)
+
                 non_ambiguous_value = None
                 for row_index, moves_list in moves_per_cell.items():
                     if len(moves_list) == 1:
@@ -328,7 +325,6 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                         if len(moves_list) > 1 and non_ambiguous_value in moves_list:
                             return Move(row_index, j, non_ambiguous_value)
             
-            print("OSHTE PO DEBA")
             return None
 
         def get_greedy_move(state: GameState, legal_moves):
