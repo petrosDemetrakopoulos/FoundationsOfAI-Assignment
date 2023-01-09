@@ -1,0 +1,7 @@
+1) Change scoring function for penalization as follows:
+    - > Score if we fill 1 cell - score of the opponent if he fills the last remaining
+
+2) Idea of considering depth when calculating legal moves (from assignment that Stefanos reviewed)
+
+3) Decouple cell selection from number put oin it. First select optimal cell to fill, then select the number
+
