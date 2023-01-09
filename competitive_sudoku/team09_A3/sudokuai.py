@@ -4,6 +4,9 @@
 import copy
 import random
 import math
+
+import numpy as np
+
 from competitive_sudoku.sudoku import GameState, Move, SudokuBoard, TabooMove
 import competitive_sudoku.sudokuai
 import time
@@ -11,31 +14,46 @@ import time
 
 # based on https://ai-boson.github.io/mcts/
 class TreeNode:
-    def __init__(self, game_state: GameState, parent_node, parent_move: Move, candidate_moves, num_empty_cells, is_player1=True):
+    def __init__(self, game_state: GameState, parent_node, parent_move, candidate_moves, num_empty_cells, is_our_turn=True):
         self.game_state = game_state
         self.parent_node = parent_node
         self.parent_move = parent_move
         self.children_nodes = []
         self.candidate_moves = candidate_moves
         self.num_empty_cells = num_empty_cells
-        self.is_player1 = is_player1
+        self.is_our_turn = is_our_turn
 
         self.n_value = 0  # Number of times the node has been visited
-        self.win_count = {"player1": 0, "player2": 0, "tie":0}
+        self.win_count = [0, 0]
         self.unevaluated_moves = candidate_moves
         return
 
     def get_q_value(self):
-        p1_wins = self.win_count["player1"]
-        p1_loses = self.win_count["player2"]
+        p1_wins = self.win_count[0]
+        p1_loses = self.win_count[1]
 
         return p1_wins - p1_loses
 
     def get_n_value(self):
         return self.n_value
 
+    def get_parent_move(self):
+        return self.parent_move
+
     def expand_tree(self):
+        # Pick the next move from the unevaluated moves list
         new_move = self.unevaluated_moves.pop()  # Choose a random unevaluated move to evaluate
+        # Calculate the new move's score
+        new_move_score = evaluate_move_score_increase(new_move, self.game_state)
+
+        ### FIX: Calculate move score here (self.eval) and store it (game_state copy)
+        # to pass it to the new child_node
+        # print("DIAG1 before: ", self.game_state.scores)
+        if self.is_our_turn:
+            self.game_state.scores[0] += new_move_score
+        else:
+            self.game_state.scores[1] += new_move_score
+        # print("DIAG1 after: ", self.game_state.scores)
 
         new_game_state = copy.deepcopy(self.game_state)  # Create a copy of the current game state
         new_game_state.board.put(new_move.i, new_move.j, new_move.value)  # Make the new move on the new game state
@@ -44,85 +62,135 @@ class TreeNode:
         # Find any legal moves we can make at the current game_state
         updated_candidate_moves = legal_moves_after_pruning(new_game_state, updated_empty_cells)
 
-        child_node = TreeNode(new_game_state, self, new_move, updated_candidate_moves, self.num_empty_cells - 1, not self.is_player1)
+        child_node = TreeNode(new_game_state, self, new_move, updated_candidate_moves, self.num_empty_cells - 1,
+                              not self.is_our_turn)
 
         self.children_nodes.append(child_node)
 
         return child_node
 
-    def rollout_policy(self, possible_moves):
-        return possible_moves[np.random.randint(len(possible_moves))]
+    def sorting_of_element(self, list1, list2):
+        # initializing blank dictionary
+        f_1 = {}
+        # initializing blank list
+        final_list = []
+        
+        # Addition of two list in one dictionary
+        f_1 = {list1[i]: list2[i] for i in range(len(list2))}
+        
+        # sorting of dictionary based on value
+        f_lst = {k: v for k, v in sorted(f_1.items(), key=lambda item: item[1])}
+        
+        # Element addition in the list
+        for i in f_lst.keys():
+            final_list.append(i)
+        return final_list
+
+    def select_random_move(self, possible_moves, game_state):
+        scores = [evaluate_move_score_increase(move, game_state) for move in possible_moves]
+        moves = [
+            elem[1]
+            for elem in sorted(zip(scores, possible_moves), key=lambda tup: tup[0])
+        ]
+        moves.reverse()
+        if len(moves) >= 5:
+            moves = moves[:5]
+    
+        return moves[np.random.randint(len(moves))]
 
     def is_terminal_node(self):
         return len(get_empty_cells(self.game_state)) == 0
 
     def rollout(self):
-        current_rollout_state = self.game_state
-        empty_cells = get_empty_cells(current_rollout_state)
-        is_game_over = len(empty_cells) == 0
-    
-        while not is_game_over:
-            empty_cells = get_empty_cells(current_rollout_state)
-            possible_moves = legal_moves_after_pruning(current_rollout_state, empty_cells)
-            
-            action = self.rollout_policy(possible_moves)
+        # TODO: The termination condition is wrong
+        # TODO: probably needs deepcopy
+        # The simulation (rollout) starts one level below the current node (next move), therefore
+        # we change the player flag to indicate that it is the next player's turn
+        is_our_turn = not self.is_our_turn
+        rollout_game_state = copy.deepcopy(self.game_state)
+        available_moves = self.candidate_moves
 
-            score_increase = self.evaluate_move_score_increase(
-                action, current_rollout_state)
+        ### FIX: The total score of the game during the simulation
+        # (rollout) steps should be saved somewhere -> GameState.scores
 
-            # note: probably needs deepcopy
-            current_rollout_state.board.put(action.i, action.j, action.value)
+        # while not is_game_over:
+        while available_moves:
+            # Select a random move from the available moves
+            selected_move = self.select_random_move(available_moves, game_state=rollout_game_state)
 
-            if current_rollout_state.scores:
-                if current_rollout_state.scores[0]:
-                    current_rollout_state.scores[0] += score_increase
-                else:
-                    current_rollout_state.scores[0] = score_increase
+            # TODO: Should "allow recursion" be true here?
+            # Calculate the selected move's score
+            selected_move_score = evaluate_move_score_increase(selected_move, rollout_game_state)
+
+            # "Play" the move on the board
+            rollout_game_state.board.put(selected_move.i, selected_move.j, selected_move.value)
+
+            #print("DIAG3 before: ", rollout_game_state.scores)
+            # Update the saved score for the player that is currently playing
+            if is_our_turn:
+                rollout_game_state.scores[0] += selected_move_score
             else:
-                current_rollout_state.scores = [0, score_increase]
+                rollout_game_state.scores[1] += selected_move_score
+            #print("DIAG4 before: ", rollout_game_state.scores)
 
-        # return game result, 1 if first player wins, 0 is tie, -1 is player 2 wins    
-        if current_rollout_state.scores[0] > current_rollout_state.scores[1]:
-            return "player1"
-        elif current_rollout_state.scores[1] > current_rollout_state.scores[0]:
-            return "player2"
-        else:
-            return "tie" 
-    
-    def backpropagate(self, result): # result shoud be either "player1" or "player2"
+            # Change the player order flag to the next player
+            is_our_turn = not is_our_turn
+
+            # Update the available moves
+            empty_cells = get_empty_cells(rollout_game_state)
+            available_moves = legal_moves_after_pruning(rollout_game_state, empty_cells)
+
+        #### FIX: Return score result instead on win result here!
+        # TODO: Should unsolvable board states be taken into consideration here (check sample code)?
+        return rollout_game_state.scores
+
+    def backpropagate(self, result):  # result should be "player1", "player2" or "tie"
         self.n_value += 1.
-        self.win_count[result] += 1.
-        if self.parent:
-            self.parent.backpropagate(result)
+        ### FIX: Check total game score here and determine win_count change this way
+        # for the player currently playing, the score is current_player_score += result
+
+        # Check which player has the most turn wins based on the provided result
+        if result[0] > result[1]:
+            # Player1 has the most wins
+            self.win_count[0] += 1
+        elif result[1] > result[0]:
+            self.win_count[1] += 1
+
+        # If a parent node exists (current node is NOT root), backpropagate the result
+        if self.parent_node:
+            self.parent_node.backpropagate(result)
 
     def is_fully_expanded(self):
         return len(self.unevaluated_moves) == 0
 
-    def get_best_child(self, c_param=0.1):
-        choices_weights = [(c.get_q_value() / c.get_n_value()) + c_param * np.sqrt((2 * np.log(self.get_n_value()) / c.get_n_value())) for c in self.children_nodes]
-        return self.children[np.argmax(choices_weights)]
+    def get_best_child(self, c_param=3):
+        # TODO: Tweak C parameter value?
+        choices_weights = [
+            (c.get_q_value() / c.get_n_value()) + c_param * np.sqrt((2 * np.log(self.get_n_value()) / c.get_n_value()))
+            for c in self.children_nodes]
+        return self.children_nodes[np.argmax(choices_weights)]
 
-    def tree_policy(self):
+    def select_rollout_node(self):
         current_node = self
+
         while not current_node.is_terminal_node():
-            
+
             if not current_node.is_fully_expanded():
                 return current_node.expand_tree()
             else:
                 current_node = current_node.get_best_child()
+
         return current_node
 
-    
-    def find_best_move(self):
-        num_simulations = 100
-
-        for i in range(num_simulations):
-            v = self.tree_policy()
-            reward = v.rollout()
-            v.backpropagate(reward)
-	
-        return self.get_best_child(c_param=0.)
-
+    # def find_best_move(self):
+    #     num_simulations = 100
+    #
+    #     for i in range(num_simulations):
+    #         v = self.select_rollout_node()
+    #         result = v.rollout()
+    #         v.backpropagate(result)
+    #
+    #     return self.get_best_child(c_param=0.1)
 
 
 class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
@@ -133,171 +201,9 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
 
     def __init__(self):
         super().__init__()
-        self.N = -1
-        self.range_N = range(self.N)
-        self.range_N_plus_1 = range(1, self.N + 1)
-
-    def evaluate_move_score_increase(self, move: Move, game_state: GameState, allow_recusion=True):
-        """
-        Calculates the score increase achieved after the proposed move is made.
-        @param move: A Move object that describes the proposed move
-        @param game_state: The GameState object that describes the game in progress
-        @return: The calculated score increase achieved by the proposed move
-        """
-        filled_row = get_filled_row_values(move.i, game_state)
-        filled_col = get_filled_row_values(move.j, game_state)
-        filled_block = get_filled_block_values(move.i, move.j, game_state)
-
-        full_len = self.N - 1
-        score = 0
-        # Case where a row, a column and a block are completed after the proposed move is made
-        if len(filled_row) == full_len and len(filled_col) == full_len and len(filled_block) == full_len:
-            score = 7
-        # Case where a row and a column are completed after the proposed move is made
-        elif len(filled_row) == full_len and len(filled_col) == full_len:
-            score = 3
-        # Case where a row and a block are completed after the proposed move is made
-        elif len(filled_row) == full_len and len(filled_block) == full_len:
-            score = 3
-        # Case where a col and a block are completed after the proposed move is made
-        elif len(filled_row) == full_len and len(filled_block) == full_len:
-            score = 3
-        # Case where only 1 among column, row and block are completed after the proposed move is made
-        elif len(filled_row) == full_len or len(filled_col) == full_len or len(filled_block) == full_len:
-            score = 1
-
-        # Case where either a row, a column, a block or a combination of them can be immediately filled during the
-        # next game turn, thus easily providing points to the opponent. Our intention is to introduce an artificial
-        # "penalty" (not reflected in the final score of the game) for the proposal of such moves. This will force
-        # the agent to avoid such moves, as they allow the opponent to immediately score points afterwards.
-        is_row_almost_filled = len(filled_row) == full_len - 1
-        is_col_almost_filled = len(filled_col) == full_len - 1
-        is_block_almost_filled = len(filled_block) == full_len - 1
-        # The "allow_recurstion" parameter is used to avoid getting stuck in an infinite loop.
-        # This check of the allow recursion parameter is needed because when we evaluate our own moves
-        # and want to reason about the points the opponent can score with the next move
-        # we want to keep the heuristic out of the calculation and get the actual score the opponent can get
-        if allow_recusion:
-            full_len_range = range(1, full_len + 2)
-            empty_cells = get_empty_cells(game_state)
-            if is_row_almost_filled:
-                # Calculate which value is missing from the row under examination
-                # We do so by finding the difference between the sets containing all the nxm values that must be present in a complete row
-                # and the set containing the values that are currently filled in the row
-                # we follow the same reasoning for columns and blocks in the following if statements
-                missing_value = list(set(full_len_range) - set(filled_row))[0]
-                empty_cell_index = [
-                    x for x in empty_cells if x[0] == move.i][0]
-                # Place move that is immediately available for point scoring
-                game_state.board.put(
-                    empty_cell_index[0], empty_cell_index[1], missing_value)
-                # Evaluate that move to check how many points it awards
-                move_score = self.evaluate_move_score_increase(
-                    Move(empty_cell_index[0], empty_cell_index[1], missing_value), game_state, False)
-                potential_row_move_points_lost = move_score
-                # Remove move from board to return to original game_state
-                game_state.board.put(
-                    empty_cell_index[0], empty_cell_index[1], SudokuBoard.empty)
-            else:
-                potential_row_move_points_lost = 0
-
-            if is_col_almost_filled:
-                # Calculate which value is missing from the collumn under examinationive
-                missing_value = list(set(full_len_range) - set(filled_col))[0]
-                empty_cell_index = [
-                    x for x in empty_cells if x[1] == move.j][0]
-                # Place move that is immediately available for point scoring
-                game_state.board.put(
-                    empty_cell_index[0], empty_cell_index[1], missing_value)
-                # Evaluate that move to check how many points it awards
-                move_score = self.evaluate_move_score_increase(
-                    Move(empty_cell_index[0], empty_cell_index[1], missing_value), game_state, False)
-                potential_col_move_points_lost = move_score
-                # Remove move from board to return to original game_state
-                game_state.board.put(
-                    empty_cell_index[0], empty_cell_index[1], SudokuBoard.empty)
-            else:
-                potential_col_move_points_lost = 0
-
-            if is_block_almost_filled:
-                # Calculate which value is missing from the column under examination
-                missing_value = list(
-                    set(full_len_range) - set(filled_block))[0]
-
-                first_row = (move.i // game_state.board.m) * game_state.board.m
-                first_column = (move.j // game_state.board.n) * \
-                               game_state.board.n
-                empty_cell_index = [x for x in empty_cells if
-                                    x[0] in range(first_row, first_row + game_state.board.m) and x[1] in range(
-                                        first_column, first_column + game_state.board.n)][0]
-                # Place move that is immediately available for point scoring
-                game_state.board.put(
-                    empty_cell_index[0], empty_cell_index[1], missing_value)
-                # Evaluate that move to check how many points it awards
-                move_score = self.evaluate_move_score_increase(
-                    Move(empty_cell_index[0], empty_cell_index[1], missing_value), game_state, False)
-                potential_block_move_points_lost = move_score
-                # Remove move from board to return to original game_state
-                game_state.board.put(
-                    empty_cell_index[0], empty_cell_index[1], SudokuBoard.empty)
-            else:
-                potential_block_move_points_lost = 0
-            score = score - max(potential_row_move_points_lost, potential_col_move_points_lost,
-                                potential_block_move_points_lost)
-
-        return score
-
-    def find_optimal_move(self, game_state: GameState, max_depth):
-        """
-        Used as a helper function that triggers Minimax's recursive call
-        @param game_state: The GameState object that describes the current game_state of the game in progress
-        @param max_depth: The maximum depth to be reached by Minimax's tree
-        @return: A Move object representing the best game move determined through Minimax's recursion
-        """
-        # Initialize max_score with the lowest possible supported value
-        max_score = -math.inf
-        # Find all empty cells
-        empty_cells = get_empty_cells(game_state)
-
-        if len(empty_cells) == 0:
-            # Game end, all cells are filled, practically reached a leaf node
-            return Move(-1, -1, -1)
-
-        # Initialize best_move to an invalid move
-        best_move = Move(-1, -1, -1)
-        # Find all possible legal moves for the current game_state
-        legal_moves = legal_moves_after_pruning(game_state, empty_cells)
-
-        for legal_move in legal_moves:
-            # Calculate the amount by which the score of the maximizing player will be increased if it plays legal_move
-            score_increase = self.evaluate_move_score_increase(
-                legal_move, game_state)
-            # Make the move
-            game_state.board.put(legal_move.i, legal_move.j, legal_move.value)
-
-            # Increase the score of the player at the current game_state.
-            # The score of the maximizing player is saved at game_state.scores[0] and
-            # the score of minimizing player is saved at game_state.scores[1]
-            if game_state.scores:
-                if game_state.scores[0]:
-                    game_state.scores[0] += score_increase
-                else:
-                    game_state.scores[0] = score_increase
-            else:
-                game_state.scores = [0, score_increase]
-            cur_max_score = self.minimax(
-                game_state, max_depth, 0, -math.inf, math.inf, False)
-
-            # Clear legal_move from the board to continue by checking other possible moves (recursion unrolling)
-            game_state.board.put(legal_move.i, legal_move.j, SudokuBoard.empty)
-
-            # Undo the score increase to continue by checking other possible moves (recursion unrolling)
-            game_state.scores[0] -= score_increase
-
-            if cur_max_score > max_score:
-                best_move = Move(legal_move.i, legal_move.j, legal_move.value)
-                max_score = cur_max_score
-        return best_move
+        # self.N = -1
+        # self.range_N = range(self.N)
+        # self.range_N_plus_1 = range(1, self.N + 1)
 
     def get_greedy_move(self, game_state: GameState, legal_moves):
         """
@@ -310,134 +216,39 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
         max_move = legal_moves[0]
         max_score = -1
         for move in legal_moves:
-            max_eval = self.evaluate_move_score_increase(move, game_state)
+            max_eval = evaluate_move_score_increase(move, game_state)
             if max_eval > max_score:
                 max_move = move
                 max_score = max_eval
         return max_move
 
-    def minimax(self, game_state: GameState, max_depth: int, depth: int, alpha: float, beta: float,
-                is_maximizing_player: bool):
-        """
-        Implementation of the Minimax algorithm that includes alpha-beta pruning
-        @param game_state: The GameState object that describes the current game_state of the game in progress
-        @param max_depth: The maximum depth to be reached by Minimax's tree
-        @param depth: The current depth reached by Minimax's tree
-        @param alpha: The alpha value (used for alpha-beta pruning)
-        @param beta: The beta value (used for alpha-beta pruning)
-        @param is_maximizing_player: A boolean flag indicating whether it is the maximizing player's turn to play
-        @return: The maximum maximizer-minimizer score difference achieved by the Minimax Algorithm
-        """
-        if depth >= max_depth:
-            # Max depth reached, returning the score of the node
-            return game_state.scores[0] - game_state.scores[1]
+    def monte_carlo_tree_search(self, game_state: GameState, candidate_moves, num_simulations):
+        num_empty_cells = len(get_empty_cells(game_state))
+        # TODO: Is deep copy required here?
+        root_node = TreeNode(game_state, None, None, candidate_moves, num_empty_cells)
 
-        empty_cells = get_empty_cells(game_state)
-        # Find any legal moves we can make at the current game_state
-        legal_moves = legal_moves_after_pruning(game_state, empty_cells)
+        for i in range(num_simulations):
+            # TODO: break condition here?
+            v = root_node.select_rollout_node()
+            result = v.rollout()
+            v.backpropagate(result)
 
-        if len(legal_moves) == 0:
-            # No legal moves left, practically a leaf node was reached. The evaluation function of a node is the
-            # difference between the score of the maximizer at this game state and the score of the minimizer at the
-            # same game state. This is the quantity that the minimax tries to maximize for the maximizing player and
-            # minimize for the opponent.
-            return game_state.scores[0] - game_state.scores[1]
-
-        if is_maximizing_player:
-            # Maximizer's move
-            # Initialize max_score with the lowest possible supported value
-            max_score = -math.inf
-
-            for legal_move in legal_moves:
-                # Calculate the amount by which the score of the maximizing player will increase if it plays
-                # legal_move
-                maximizer_score_increase = self.evaluate_move_score_increase(
-                    legal_move, game_state)
-
-                # Play the move (add the move to the sudoku board)
-                game_state.board.put(
-                    legal_move.i, legal_move.j, legal_move.value)
-
-                # In the "scores" property of the GameState object we can find the scores of the maximizing and
-                # minimizing players. Since our logic is based on the difference of scores between the maximizing
-                # player and minimizing player after a move is played, we need to temporarily reflect the move's
-                # result on the player score before continuing the search
-                if game_state.scores:
-                    if game_state.scores[0]:
-                        game_state.scores[0] += maximizer_score_increase
-                    else:
-                        game_state.scores[0] = maximizer_score_increase
-                else:
-                    game_state.scores = [maximizer_score_increase, 0]
-
-                # Call minimax for the minimizing player
-                max_score = max(max_score, self.minimax(
-                    game_state, max_depth, depth + 1, alpha, beta, False))
-
-                # Clear legal_move from the board to continue by checking other possible moves (recursion unrolling)
-                game_state.board.put(
-                    legal_move.i, legal_move.j, SudokuBoard.empty)
-
-                # Undo the score increase to continue by checking other possible moves (recursion unrolling)
-                game_state.scores[0] -= maximizer_score_increase
-
-                # Implementation of the alpha-beta pruning technique as demonstrated on
-                # https://www.geeksforgeeks.org/minimax-algorithm-in-game-theory-set-4-alpha-beta-pruning
-                alpha = max(alpha, max_score)
-                if beta <= alpha:
-                    break
-
-            return max_score
-        else:
-            # minimizer's move
-            # Initialize min_score with the highest possible supported value
-            min_score = math.inf
-
-            for legal_move in legal_moves:
-                # Calculate the amount by which the score of the minimizing player will increase if it plays
-                # legal_move
-                minimizer_score_increase = self.evaluate_move_score_increase(
-                    legal_move, game_state)
-
-                # Play the move (add the move to the sudoku board)
-                game_state.board.put(
-                    legal_move.i, legal_move.j, legal_move.value)
-
-                # Increase score for the maximizer in the current game_state
-                if game_state.scores:
-                    if game_state.scores[1]:
-                        game_state.scores[1] += minimizer_score_increase
-                    else:
-                        game_state.scores[1] = minimizer_score_increase
-                else:
-                    game_state.scores = [0, minimizer_score_increase]
-
-                # Call minimax for the maximizing player
-                min_score = min(min_score, self.minimax(
-                    game_state, max_depth, depth + 1, alpha, beta, True))
-
-                # Clear legal_move from the board to continue by checking other possible moves (recursion unrolling)
-                game_state.board.put(
-                    legal_move.i, legal_move.j, SudokuBoard.empty)
-
-                # Undo the score increase to continue by checking other possible moves (recursion unrolling)
-                game_state.scores[1] -= minimizer_score_increase
-
-                beta = min(beta, min_score)
-                if beta <= alpha:
-                    break
-
-            return min_score
+            # TODO: Tweak C parameter value?
+            best_move = root_node.get_best_child(c_param=3).get_parent_move()
+            self.propose_move(best_move)
 
     def compute_best_move(self, game_state: GameState) -> None:
+        # TODO: New addition!
+        # Initialize GameState.scores with 0 for both players
+        game_state.scores = [0, 0]
+
         # Filter out illegal moves AND taboo moves
-        self.N = game_state.board.N
-        self.range_N = range(game_state.board.N)
-        self.range_N_plus_1 = range(1, game_state.board.N + 1)
+        range_N = range(game_state.board.N)
+        range_N_plus_1 = range(1, game_state.board.N + 1)
         legal_moves = []
-        for i in self.range_N:
-            for j in self.range_N:
-                for value in self.range_N_plus_1:
+        for i in range_N:
+            for j in range_N:
+                for value in range_N_plus_1:
                     if is_possible(i, j, value, game_state) and value not in get_illegal_moves(i, j, game_state):
                         legal_moves.append(Move(i, j, value))
 
@@ -459,32 +270,11 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
         move = self.get_greedy_move(game_state, legal_moves)
         self.propose_move(move)
 
-        # Initial Minimax search depth
-        max_depth = 0
-        while True:
-            # Iteratively increase Minimax's tree depth to discover more optimal moves.
-            # On each iteration the move proposed should be slightly better than the move of the previous iteration.
-            max_depth += 1
-            # Initial call to the recursive minimax function
-            best_move = self.find_optimal_move(game_state, max_depth)
-            # Fail-safe mechanism to ensure we will never propose an invalid move
-            if best_move != Move(-1, -1, -1):
-                if self.verbose:
-                    # Print statements for debug purposes
-                    print("--------------")
-                    print("Random move proposed: " + str(best_move))
-                    print("Score for selected legal_move: " + str(
-                        self.evaluate_move_score_increase(best_move, game_state)))
-                    print("Illegal moves for selected cell: " + str(
-                        get_illegal_moves(best_move.i, best_move.j, game_state)))
-                    print("Block filled values for selected cell: " + str(
-                        get_filled_block_values(best_move.i, best_move.j, game_state)))
-                    print("Row filled values for selected cell: " + str(
-                        get_filled_row_values(best_move.i, game_state)))
-                    print("Column filled values for selected cell: " + str(
-                        get_filled_column_values(best_move.j, game_state)))
-                    print("--------------")
-                self.propose_move(best_move)
+        # Monte Carlo Search Tree
+        # TODO: Should the number of simulations change dynamically?
+        num_simulations = 1000000
+        self.monte_carlo_tree_search(game_state, legal_moves, num_simulations)
+
 
 ###### Start of helper functions ######
 def get_filled_row_values(row_index: int, game_state: GameState):
@@ -496,11 +286,12 @@ def get_filled_row_values(row_index: int, game_state: GameState):
     """
     # returns non-empty values in row with index row_index
     filled_values = []
-    for i in game_state.board.N:
+    for i in range(game_state.board.N):
         cur_cell = game_state.board.get(row_index, i)
         if cur_cell != SudokuBoard.empty:
             filled_values.append(cur_cell)
     return filled_values
+
 
 def get_filled_column_values(column_index: int, game_state: GameState):
     """
@@ -510,11 +301,12 @@ def get_filled_column_values(column_index: int, game_state: GameState):
     @return: A list containing the integer values of the specified column's non-empty cells.
     """
     filled_values = []
-    for i in game_state.board.N:
+    for i in range(game_state.board.N):
         cur_cell = game_state.board.get(i, column_index)
         if cur_cell != SudokuBoard.empty:
             filled_values.append(cur_cell)
     return filled_values
+
 
 def get_filled_block_values(row_index: int, column_index: int, game_state: GameState):
     """
@@ -543,6 +335,7 @@ def get_filled_block_values(row_index: int, column_index: int, game_state: GameS
                 filled_values.append(crn_cell)
     return filled_values
 
+
 def is_possible(row_index, column_index, proposed_value, game_state: GameState):
     """
     Determines whether a proposed game move is possible by examining whether the target cell is empty
@@ -557,6 +350,7 @@ def is_possible(row_index, column_index, proposed_value, game_state: GameState):
         TabooMove(row_index, column_index,
                   proposed_value) in game_state.taboo_moves
 
+
 def get_illegal_moves(row_index: int, col_index: int, game_state: GameState):
     """
     Returns a list of numbers that already exist in the specified cell's row, column or block. These numbers
@@ -568,6 +362,8 @@ def get_illegal_moves(row_index: int, col_index: int, game_state: GameState):
     """
     illegal = get_filled_row_values(row_index, game_state) + get_filled_column_values(col_index, game_state) + get_filled_block_values(row_index, col_index, game_state)
     return set(illegal)  # Easy way to remove duplicates
+
+
 def legal_moves_after_pruning(game_state: GameState, empty_cells):
     """
     Filters the provided legal moves using the defined pruning rules.
@@ -595,11 +391,12 @@ def legal_moves_after_pruning(game_state: GameState, empty_cells):
     # The resulting list contains all moves which are both possible and LEGAL
     legal_moves = []
     for coords in known_no_reward_cells:
-        for value in game_state.board.N + 1:
+        for value in range(game_state.board.N + 1):
             if is_possible(coords[0], coords[1], value, game_state) and value not in get_illegal_moves(
                     coords[0], coords[1], game_state):
                 legal_moves.append(Move(coords[0], coords[1], value))
     return legal_moves
+
 
 def get_empty_cells(game_state: GameState):
     """
@@ -610,6 +407,118 @@ def get_empty_cells(game_state: GameState):
     """
     # Compute empty cells coordinates
     # These are the cells that the agent can probably fill
-    empty_cells = [(i, j) for i in game_state.board.N for j in game_state.board.N if
+    board_size = game_state.board.N
+    empty_cells = [(i, j) for i in range(board_size) for j in range(board_size) if
                    game_state.board.get(i, j) == SudokuBoard.empty]
     return empty_cells
+
+
+def evaluate_move_score_increase(move: Move, game_state: GameState, allow_recusion=True):
+    """
+    Calculates the score increase achieved after the proposed move is made.
+    @param move: A Move object that describes the proposed move
+    @param game_state: The GameState object that describes the game in progress
+    @return: The calculated score increase achieved by the proposed move
+    """
+    filled_row = get_filled_row_values(move.i, game_state)
+    filled_col = get_filled_row_values(move.j, game_state)
+    filled_block = get_filled_block_values(move.i, move.j, game_state)
+
+    full_len = game_state.board.N - 1
+    score = 0
+    # Case where a row, a column and a block are completed after the proposed move is made
+    if len(filled_row) == full_len and len(filled_col) == full_len and len(filled_block) == full_len:
+        score = 7
+    # Case where a row and a column are completed after the proposed move is made
+    elif len(filled_row) == full_len and len(filled_col) == full_len:
+        score = 3
+    # Case where a row and a block are completed after the proposed move is made
+    elif len(filled_row) == full_len and len(filled_block) == full_len:
+        score = 3
+    # Case where a col and a block are completed after the proposed move is made
+    elif len(filled_row) == full_len and len(filled_block) == full_len:
+        score = 3
+    # Case where only 1 among column, row and block are completed after the proposed move is made
+    elif len(filled_row) == full_len or len(filled_col) == full_len or len(filled_block) == full_len:
+        score = 1
+
+    # Case where either a row, a column, a block or a combination of them can be immediately filled during the
+    # next game turn, thus easily providing points to the opponent. Our intention is to introduce an artificial
+    # "penalty" (not reflected in the final score of the game) for the proposal of such moves. This will force
+    # the agent to avoid such moves, as they allow the opponent to immediately score points afterwards.
+    is_row_almost_filled = len(filled_row) == full_len - 1
+    is_col_almost_filled = len(filled_col) == full_len - 1
+    is_block_almost_filled = len(filled_block) == full_len - 1
+    # The "allow_recurstion" parameter is used to avoid getting stuck in an infinite loop.
+    # This check of the allow recursion parameter is needed because when we evaluate our own moves
+    # and want to reason about the points the opponent can score with the next move
+    # we want to keep the heuristic out of the calculation and get the actual score the opponent can get
+    if allow_recusion:
+        full_len_range = range(1, full_len + 2)
+        empty_cells = get_empty_cells(game_state)
+        if is_row_almost_filled:
+            # Calculate which value is missing from the row under examination
+            # We do so by finding the difference between the sets containing all the nxm values that must be present in a complete row
+            # and the set containing the values that are currently filled in the row
+            # we follow the same reasoning for columns and blocks in the following if statements
+            missing_value = list(set(full_len_range) - set(filled_row))[0]
+            empty_cell_index = [
+                x for x in empty_cells if x[0] == move.i][0]
+            # Place move that is immediately available for point scoring
+            game_state.board.put(
+                empty_cell_index[0], empty_cell_index[1], missing_value)
+            # Evaluate that move to check how many points it awards
+            move_score = evaluate_move_score_increase(
+                Move(empty_cell_index[0], empty_cell_index[1], missing_value), game_state, False)
+            potential_row_move_points_lost = move_score
+            # Remove move from board to return to original game_state
+            game_state.board.put(
+                empty_cell_index[0], empty_cell_index[1], SudokuBoard.empty)
+        else:
+            potential_row_move_points_lost = 0
+
+        if is_col_almost_filled:
+            # Calculate which value is missing from the collumn under examinationive
+            missing_value = list(set(full_len_range) - set(filled_col))[0]
+            empty_cell_index = [
+                x for x in empty_cells if x[1] == move.j][0]
+            # Place move that is immediately available for point scoring
+            game_state.board.put(
+                empty_cell_index[0], empty_cell_index[1], missing_value)
+            # Evaluate that move to check how many points it awards
+            move_score = evaluate_move_score_increase(
+                Move(empty_cell_index[0], empty_cell_index[1], missing_value), game_state, False)
+            potential_col_move_points_lost = move_score
+            # Remove move from board to return to original game_state
+            game_state.board.put(
+                empty_cell_index[0], empty_cell_index[1], SudokuBoard.empty)
+        else:
+            potential_col_move_points_lost = 0
+
+        if is_block_almost_filled:
+            # Calculate which value is missing from the column under examination
+            missing_value = list(
+                set(full_len_range) - set(filled_block))[0]
+
+            first_row = (move.i // game_state.board.m) * game_state.board.m
+            first_column = (move.j // game_state.board.n) * \
+                           game_state.board.n
+            empty_cell_index = [x for x in empty_cells if
+                                x[0] in range(first_row, first_row + game_state.board.m) and x[1] in range(
+                                    first_column, first_column + game_state.board.n)][0]
+            # Place move that is immediately available for point scoring
+            game_state.board.put(
+                empty_cell_index[0], empty_cell_index[1], missing_value)
+            # Evaluate that move to check how many points it awards
+            move_score = evaluate_move_score_increase(
+                Move(empty_cell_index[0], empty_cell_index[1], missing_value), game_state, False)
+            potential_block_move_points_lost = move_score
+            # Remove move from board to return to original game_state
+            game_state.board.put(
+                empty_cell_index[0], empty_cell_index[1], SudokuBoard.empty)
+        else:
+            potential_block_move_points_lost = 0
+        score = score - max(potential_row_move_points_lost, potential_col_move_points_lost,
+                            potential_block_move_points_lost)
+
+    return score
