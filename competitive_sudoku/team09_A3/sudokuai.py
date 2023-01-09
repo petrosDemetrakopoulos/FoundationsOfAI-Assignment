@@ -105,13 +105,11 @@ class TreeNode:
             # "Play" the move on the board
             rollout_game_state.board.put(selected_move.i, selected_move.j, selected_move.value)
 
-            #print("DIAG3 before: ", rollout_game_state.scores)
             # Update the saved score for the player that is currently playing
             if is_our_turn:
                 rollout_game_state.scores[0] += selected_move_score
             else:
                 rollout_game_state.scores[1] += selected_move_score
-            #print("DIAG4 before: ", rollout_game_state.scores)
 
             # Change the player order flag to the next player
             is_our_turn = not is_our_turn
@@ -120,7 +118,6 @@ class TreeNode:
             empty_cells = get_empty_cells(rollout_game_state)
             available_moves = legal_moves_after_pruning(rollout_game_state, empty_cells)
 
-        #### FIX: Return score result instead on win result here!
         # TODO: Should unsolvable board states be taken into consideration here (check sample code)?
         return rollout_game_state.scores
 
