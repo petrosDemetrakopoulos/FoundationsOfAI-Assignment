@@ -12,7 +12,7 @@ import competitive_sudoku.sudokuai
 import time
 
 
-# based on https://ai-boson.github.io/mcts/
+# Implementation of MCTS is based on https://ai-boson.github.io/mcts/
 class TreeNode:
     def __init__(self, game_state: GameState, parent_node, parent_move, candidate_moves, num_empty_cells, is_our_turn=True):
         self.game_state = game_state
@@ -46,14 +46,10 @@ class TreeNode:
         # Calculate the new move's score
         new_move_score = evaluate_move_score_increase(new_move, self.game_state)
 
-        ### FIX: Calculate move score here (self.eval) and store it (game_state copy)
-        # to pass it to the new child_node
-        # print("DIAG1 before: ", self.game_state.scores)
         if self.is_our_turn:
             self.game_state.scores[0] += new_move_score
         else:
             self.game_state.scores[1] += new_move_score
-        # print("DIAG1 after: ", self.game_state.scores)
 
         new_game_state = copy.deepcopy(self.game_state)  # Create a copy of the current game state
         new_game_state.board.put(new_move.i, new_move.j, new_move.value)  # Make the new move on the new game state
