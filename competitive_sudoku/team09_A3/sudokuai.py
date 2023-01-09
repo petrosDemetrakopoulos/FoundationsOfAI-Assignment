@@ -15,7 +15,7 @@ import time
 # based on https://ai-boson.github.io/mcts/
 class TreeNode:
     def __init__(self, game_state: GameState, parent_node, parent_move, candidate_moves, num_empty_cells,
-                 is_player1=True):
+                 is_player1=True,crn_state_score=0):
         self.game_state = game_state
         self.parent_node = parent_node
         self.parent_move = parent_move
@@ -23,6 +23,7 @@ class TreeNode:
         self.candidate_moves = candidate_moves
         self.num_empty_cells = num_empty_cells
         self.is_player1 = is_player1
+        self.crn_state_score = crn_state_score
 
         self.n_value = 0  # Number of times the node has been visited
         self.win_count = [0, 0]
@@ -70,9 +71,27 @@ class TreeNode:
 
         return child_node
 
+    def sorting_of_element(self, list1, list2):
+        # initializing blank dictionary
+        f_1 = {}
+        # initializing blank list
+        final_list = []
+        
+        # Addition of two list in one dictionary
+        f_1 = {list1[i]: list2[i] for i in range(len(list2))}
+        
+        # sorting of dictionary based on value
+        f_lst = {k: v for k, v in sorted(f_1.items(), key=lambda item: item[1])}
+        
+        # Element addition in the list
+        for i in f_lst.keys():
+            final_list.append(i)
+        return final_list
+
     def select_random_move(self, possible_moves):
         # print("DIAG: " + str(len(possible_moves)))
         # TODO: len(possible_moves) can become 0, causing error here!
+
         return possible_moves[np.random.randint(len(possible_moves))]
 
     def is_terminal_node(self):
@@ -102,13 +121,13 @@ class TreeNode:
             # "Play" the move on the board
             rollout_game_state.board.put(selected_move.i, selected_move.j, selected_move.value)
 
-            print("DIAG3 before: ", rollout_game_state.scores)
+            #print("DIAG3 before: ", rollout_game_state.scores)
             # Update the saved score for the player that is currently playing
             if is_player1:
-                rollout_game_state.scores[0] += selected_move_score
-            else:
                 rollout_game_state.scores[1] += selected_move_score
-            print("DIAG4 before: ", rollout_game_state.scores)
+            else:
+                rollout_game_state.scores[0] += selected_move_score
+            #print("DIAG4 before: ", rollout_game_state.scores)
 
             # Change the player order flag to the next player
             is_player1 = not is_player1
