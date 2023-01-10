@@ -133,26 +133,25 @@ if __name__ == '__main__':
     num_of_runs = 10
     num_of_threads = 10
     test_files_root_path = "./boards"
-    # test_files_names = ["easy-2x2.txt",
-    #                   "easy-3x3.txt",
-    #                   "empty-2x2.txt",
-    #                   "empty-2x3.txt",
-    #                   "empty-3x3.txt",
-    #                   "empty-3x4.txt",
-    #                   "empty-4x4.txt",
-    #                   "hard-3x3.txt",
-    #                   "random-2x3.txt",
-    #                   "random-3x3.txt",
-    #                   "random-3x4.txt",
-    #                   "random-4x4.txt"]
-    test_files_names = [
+    test_files_names = ["easy-2x2.txt",
+                      "easy-3x3.txt",
+                      "empty-2x2.txt",
+                      "empty-2x3.txt",
+                      "empty-3x3.txt",
+                      "empty-3x4.txt",
+                      "empty-4x4.txt",
+                      "hard-3x3.txt",
+                      "random-2x3.txt",
+                      "random-3x3.txt",
+                      "random-3x4.txt",
                       "random-4x4.txt"]
+    test_files_names = ['hard-3x3.txt']
 
     test_files_paths = [test_files_root_path + "/" + file_name for file_name in test_files_names]
 
     agent_1_name = "team09_A3"
     agent_2_name = "team09_A2_skip"
-    time_options = [5]
+    time_options = [0.5, 1,5]
 
     print(" \n     > Script Settings <")
     print("--------------------------------------------")

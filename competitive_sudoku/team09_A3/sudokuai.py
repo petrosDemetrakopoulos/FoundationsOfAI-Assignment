@@ -12,7 +12,7 @@ import competitive_sudoku.sudokuai
 import time
 
 
-# based on https://ai-boson.github.io/mcts/
+# Implementation of MCTS is based on https://ai-boson.github.io/mcts/
 class TreeNode:
     def __init__(self, game_state: GameState, parent_node, parent_move, candidate_moves, num_empty_cells, is_our_turn=True):
         self.game_state = game_state
@@ -46,14 +46,10 @@ class TreeNode:
         # Calculate the new move's score
         new_move_score = evaluate_move_score_increase(new_move, self.game_state)
 
-        ### FIX: Calculate move score here (self.eval) and store it (game_state copy)
-        # to pass it to the new child_node
-        # print("DIAG1 before: ", self.game_state.scores)
         if self.is_our_turn:
             self.game_state.scores[0] += new_move_score
         else:
             self.game_state.scores[1] += new_move_score
-        # print("DIAG1 after: ", self.game_state.scores)
 
         new_game_state = copy.deepcopy(self.game_state)  # Create a copy of the current game state
         new_game_state.board.put(new_move.i, new_move.j, new_move.value)  # Make the new move on the new game state
@@ -69,32 +65,16 @@ class TreeNode:
 
         return child_node
 
-    def sorting_of_element(self, list1, list2):
-        # initializing blank dictionary
-        f_1 = {}
-        # initializing blank list
-        final_list = []
-        
-        # Addition of two list in one dictionary
-        f_1 = {list1[i]: list2[i] for i in range(len(list2))}
-        
-        # sorting of dictionary based on value
-        f_lst = {k: v for k, v in sorted(f_1.items(), key=lambda item: item[1])}
-        
-        # Element addition in the list
-        for i in f_lst.keys():
-            final_list.append(i)
-        return final_list
-
     def select_random_move(self, possible_moves, game_state):
+        # sort moves based on their score increase (moves leading to higher score first)
         scores = [evaluate_move_score_increase(move, game_state) for move in possible_moves]
-        moves = [
-            elem[1]
-            for elem in sorted(zip(scores, possible_moves), key=lambda tup: tup[0])
-        ]
+        moves = [x[1] for x in sorted(zip(scores, possible_moves), key=lambda tup: tup[0])]
         moves.reverse()
-        if len(moves) >= 5:
-            moves = moves[:5]
+
+        # pick 1 move out of the best k moves
+        k = 5
+        if len(moves) >= k:
+            moves = moves[:k]
     
         return moves[np.random.randint(len(moves))]
 
@@ -125,13 +105,11 @@ class TreeNode:
             # "Play" the move on the board
             rollout_game_state.board.put(selected_move.i, selected_move.j, selected_move.value)
 
-            #print("DIAG3 before: ", rollout_game_state.scores)
             # Update the saved score for the player that is currently playing
             if is_our_turn:
                 rollout_game_state.scores[0] += selected_move_score
             else:
                 rollout_game_state.scores[1] += selected_move_score
-            #print("DIAG4 before: ", rollout_game_state.scores)
 
             # Change the player order flag to the next player
             is_our_turn = not is_our_turn
@@ -140,7 +118,6 @@ class TreeNode:
             empty_cells = get_empty_cells(rollout_game_state)
             available_moves = legal_moves_after_pruning(rollout_game_state, empty_cells)
 
-        #### FIX: Return score result instead on win result here!
         # TODO: Should unsolvable board states be taken into consideration here (check sample code)?
         return rollout_game_state.scores
 
