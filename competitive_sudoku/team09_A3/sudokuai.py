@@ -265,16 +265,16 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
 
         # Propose a valid move arbitrarily at first (random choice from legal moves), to make sure at least "some" move
         # is proposed by our agent in the given time limit
-        start = time.time()
+        # start = time.time()
         random_move = random.choice(legal_moves)
-        end = time.time()
-
-        diff = end - start
-        filled_cells = 36 - len(get_empty_cells(game_state))
+        # end = time.time()
+        #
+        # diff = end - start
+        # filled_cells = 36 - len(get_empty_cells(game_state))
         self.propose_move(random_move)
-        with open("greedy_time_0.5.txt", 'a') as f:
-            f.write(str(diff) + "      cells filled: " + str(filled_cells) + '\n')
-        f.close()
+        # with open("greedy_time_0.5.txt", 'a') as f:
+        #     f.write(str(diff) + "      cells filled: " + str(filled_cells) + '\n')
+        # f.close()
         # Proceed to propose a "greedy" move. This is slower than proposing a random move, but faster than proposing
         # a minimax move. As the game progresses, greedy moves take less time to be calculated because less cells are
         # empty, thus leaving more time to minimax

@@ -310,7 +310,6 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
                 moves_per_cell = {row_index : [] for row_index in available_cells_in_col}
                 for move in available_moves_in_col:
                     moves_per_cell[move.i].append(move.value)
-
                 non_ambiguous_value = None
                 for row_index, moves_list in moves_per_cell.items():
                     if len(moves_list) == 1:
