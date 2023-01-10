@@ -141,7 +141,6 @@ class TreeNode:
         return len(self.unevaluated_moves) == 0
 
     def get_best_child(self, c_param=2):
-        # TODO: Tweak C parameter value?
         choices_weights = [
             (c.get_q_value() / c.get_n_value()) + c_param * np.sqrt((2 * np.log(self.get_n_value()) / c.get_n_value()))
             for c in self.children_nodes]
@@ -155,7 +154,7 @@ class TreeNode:
             if not current_node.is_fully_expanded():
                 return current_node.expand_tree()
             else:
-                current_node = current_node.get_best_child(c_param=2)
+                current_node = current_node.get_best_child(c_param=1.5)
 
         return current_node
 
@@ -202,7 +201,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             v.backpropagate(result)
 
             # TODO: Tweak C parameter value?
-            best_move = root_node.get_best_child(c_param=2).get_parent_move()
+            best_move = root_node.get_best_child(c_param=1.5).get_parent_move()
             self.propose_move(best_move)
 
     def get_skip_move(self, legal_moves: list, game_state: GameState):
