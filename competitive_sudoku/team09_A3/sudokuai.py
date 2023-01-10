@@ -3,13 +3,10 @@
 #  https://www.gnu.org/licenses/gpl-3.0.txt)
 import copy
 import random
-import math
-
 import numpy as np
 
 from competitive_sudoku.sudoku import GameState, Move, SudokuBoard, TabooMove
 import competitive_sudoku.sudokuai
-import time
 
 
 # Implementation of MCTS is based on https://ai-boson.github.io/mcts/
@@ -66,12 +63,12 @@ class TreeNode:
         return child_node
 
     def select_random_move(self, possible_moves, game_state):
-        # sort moves based on their score increase (moves leading to higher score first)
+        # Sort moves based on their score increase (moves leading to higher score first)
         scores = [evaluate_move_score_increase(move, game_state) for move in possible_moves]
         moves = [x[1] for x in sorted(zip(scores, possible_moves), key=lambda tup: tup[0])]
         moves.reverse()
 
-        # pick 1 move out of the best k moves
+        # Pick 1 move out of the best k moves
         k = 5
         if len(moves) >= k:
             moves = moves[:k]
@@ -82,23 +79,16 @@ class TreeNode:
         return len(get_empty_cells(self.game_state)) == 0
 
     def rollout(self):
-        # TODO: The termination condition is wrong
-        # TODO: probably needs deepcopy
         # The simulation (rollout) starts one level below the current node (next move), therefore
         # we change the player flag to indicate that it is the next player's turn
         is_our_turn = not self.is_our_turn
         rollout_game_state = copy.deepcopy(self.game_state)
         available_moves = self.candidate_moves
 
-        ### FIX: The total score of the game during the simulation
-        # (rollout) steps should be saved somewhere -> GameState.scores
-
-        # while not is_game_over:
         while available_moves:
             # Select a random move from the available moves
             selected_move = self.select_random_move(available_moves, game_state=rollout_game_state)
 
-            # TODO: Should "allow recursion" be true here?
             # Calculate the selected move's score
             selected_move_score = evaluate_move_score_increase(selected_move, rollout_game_state)
 
@@ -118,13 +108,10 @@ class TreeNode:
             empty_cells = get_empty_cells(rollout_game_state)
             available_moves = legal_moves_after_pruning(rollout_game_state, empty_cells)
 
-        # TODO: Should unsolvable board states be taken into consideration here (check sample code)?
         return rollout_game_state.scores
 
-    def backpropagate(self, result):  # result should be "player1", "player2" or "tie"
+    def backpropagate(self, result):
         self.n_value += 1.
-        ### FIX: Check total game score here and determine win_count change this way
-        # for the player currently playing, the score is current_player_score += result
 
         # Check which player has the most turn wins based on the provided result
         if result[0] > result[1]:
@@ -141,7 +128,6 @@ class TreeNode:
         return len(self.unevaluated_moves) == 0
 
     def get_best_child(self, c_param=2):
-        # TODO: Tweak C parameter value?
         choices_weights = [
             (c.get_q_value() / c.get_n_value()) + c_param * np.sqrt((2 * np.log(self.get_n_value()) / c.get_n_value()))
             for c in self.children_nodes]
@@ -169,9 +155,6 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
     def __init__(self):
         super().__init__()
         self.move_skipped = False
-        # self.N = -1
-        # self.range_N = range(self.N)
-        # self.range_N_plus_1 = range(1, self.N + 1)
 
     def get_greedy_move(self, game_state: GameState, legal_moves):
         """
@@ -192,16 +175,13 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
 
     def monte_carlo_tree_search(self, game_state: GameState, candidate_moves, num_simulations):
         num_empty_cells = len(get_empty_cells(game_state))
-        # TODO: Is deep copy required here?
         root_node = TreeNode(game_state, None, None, candidate_moves, num_empty_cells)
 
         for i in range(num_simulations):
-            # TODO: break condition here?
             v = root_node.select_rollout_node()
             result = v.rollout()
             v.backpropagate(result)
 
-            # TODO: Tweak C parameter value?
             best_move = root_node.get_best_child(c_param=2).get_parent_move()
             self.propose_move(best_move)
 
@@ -250,7 +230,6 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
         return None
 
     def compute_best_move(self, game_state: GameState) -> None:
-        # TODO: New addition!
         # Initialize GameState.scores with 0 for both players
         game_state.scores = [0, 0]
 
@@ -266,24 +245,16 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
 
         # Propose a valid move arbitrarily at first (random choice from legal moves), to make sure at least "some" move
         # is proposed by our agent in the given time limit
-        # start = time.time()
         random_move = random.choice(legal_moves)
-        # end = time.time()
-        #
-        # diff = end - start
-        # filled_cells = 36 - len(get_empty_cells(game_state))
         self.propose_move(random_move)
-        # with open("greedy_time_0.5.txt", 'a') as f:
-        #     f.write(str(diff) + "      cells filled: " + str(filled_cells) + '\n')
-        # f.close()
-        # Proceed to propose a "greedy" move. This is slower than proposing a random move, but faster than proposing
-        # a minimax move. As the game progresses, greedy moves take less time to be calculated because less cells are
-        # empty, thus leaving more time to minimax
+
+        # Propose a greedy move (the highest-scoring move available at the current game state)
         move = self.get_greedy_move(game_state, legal_moves)
         self.propose_move(move)
 
         empty_cells_count = len(get_empty_cells(game_state))
 
+        # Check whether skipping a move is to the best of our interest here using our "skip" move logic
         if empty_cells_count % 2 == 0:
             skip_move = self.get_skip_move(legal_moves, game_state)
             if skip_move is not None:
@@ -292,7 +263,6 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
         
         if not self.move_skipped:
             # Monte Carlo Search Tree
-            # TODO: Should the number of simulations change dynamically?
             num_simulations = 1000000
             self.monte_carlo_tree_search(game_state, legal_moves, num_simulations)
 
