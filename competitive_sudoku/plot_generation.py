@@ -53,8 +53,3 @@ def plot_chart(results, category_names):
     return fig, ax
 
 plot_chart(data, categories)
-
-def plot_line_chart():
-    
-
-plt.show()
