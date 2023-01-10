@@ -9,12 +9,12 @@
 --------------------------------------------
 > #Loaded Test Scenarios: 1
 
-./boards/hard-3x3.txt
+./boards/empty-3x3.txt
 --------------------------------------------
 
 
 =======================================================================================================
-*** TEST SESSION (Time: 0.5, Scenario: "./boards/hard-3x3.txt", Agents: "team09_A3", "team09_A2_skip") IN PROGRESS ***
+*** TEST SESSION (Time: 1, Scenario: "./boards/empty-3x3.txt", Agents: "team09_A3", "greedy_player") IN PROGRESS ***
 > Finished running game 1 out of 10
 > Finished running game 2 out of 10
 > Finished running game 3 out of 10
@@ -25,32 +25,20 @@
 > Finished running game 8 out of 10
 > Finished running game 9 out of 10
 > Finished running game 10 out of 10
-*** RESULTS (Time: 0.5, Scenario: "./boards/hard-3x3.txt") ***
+*** RESULTS (Time: 1, Scenario: "./boards/empty-3x3.txt") ***
  
      > Overview <
 ----------------------
 > #Game Runs:  10
-> #team09_A3 Wins: 0
-> #team09_A2_skip Wins: 10
+> #team09_A3 Wins: 5
+> #greedy_player Wins: 5
 > #Draws:  0
 ----------------------
  
    > Win Rates (%) <
 ----------------------
-team09_A3: 0.00%
-team09_A2_skip: 100.00%
+team09_A3: 50.00%
+greedy_player: 50.00%
 ----------------------
 
 =======================================================================================================
-=======================================================================================================
-*** TEST SESSION (Time: 1, Scenario: "./boards/hard-3x3.txt", Agents: "team09_A3", "team09_A2_skip") IN PROGRESS ***
-DEBUG - last_output_line:  Calculate a move for player 1
-DEBUG - last_output_line:  Calculate a move for player 1
-DEBUG - last_output_line:  Calculate a move for player 1
-DEBUG - last_output_line:  Calculate a move for player 1
-DEBUG - last_output_line:  Calculate a move for player 1
-DEBUG - last_output_line:  Calculate a move for player 1
-DEBUG - last_output_line:  Calculate a move for player 1
-DEBUG - last_output_line:  Calculate a move for player 1
-DEBUG - last_output_line:  Calculate a move for player 1
-DEBUG - last_output_line:  Calculate a move for player 1
