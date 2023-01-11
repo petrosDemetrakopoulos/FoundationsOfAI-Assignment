@@ -11,6 +11,7 @@ import competitive_sudoku.sudokuai
 
 # Implementation of MCTS is based on https://ai-boson.github.io/mcts/
 class TreeNode:
+    # Class representing the nodes of Monte Carlo Tree Search
     def __init__(self, game_state: GameState, parent_node, parent_move, candidate_moves, num_empty_cells, is_our_turn=True):
         self.game_state = game_state                # The current game state object
         self.parent_node = parent_node              # The TreeNode object representing this node's parent node
@@ -29,7 +30,7 @@ class TreeNode:
 
     def get_q_value(self):
         """
-        A getter function used to return the accumulated "q" (score) value of a node
+        Getter method used to return the accumulated "q" (score) value of a node
         @return: an integer representing the accumulated "q" value
         """
         p1_wins = self.win_count[0]
@@ -39,19 +40,23 @@ class TreeNode:
 
     def get_n_value(self):
         """
-        A getter function used to return the accumulated "n" (number of visits) value of a node
+        Getter method used to return the accumulated "n" (number of visits) value of a node
         @return: an integer representing the "n" value
         """
         return self.n_value
 
     def get_parent_move(self):
         """
-        A getter function used to get the stored parent move of the current node.
+        Getter method used to get the stored parent move of the current node.
         @return: a Move object representing this node's parent move.
         """
         return self.parent_move
 
     def expand_tree(self):
+        """
+        Method  used to perform the "tree expansion" step of Monte Carlo Tree Search
+        @return: the child node of the current node that was created as a result of the tree expansion
+        """
         # Pick the next move from the unevaluated moves list
         new_move = self.unevaluated_moves.pop()  # Choose a random unevaluated move to evaluate
         # Calculate the new move's score
@@ -78,6 +83,13 @@ class TreeNode:
         return child_node
 
     def select_rollout_move(self, possible_moves, game_state):
+        """
+        Method used to select a rollout move from a list of possible moves and for a given game state, every time it
+        is called. This method is called during every iteration of the simulation "step" of Monte Carlo Search Tree
+        @param possible_moves: a list of "Move" objects representing possible moves
+        @param game_state: a GameState object representing the current state of the Competitive Sudoku game
+        @return: a "Move" object representing the selected rollout move
+        """
         # Sort moves based on their score increase (moves leading to higher score first)
         scores = [evaluate_move_score_increase(move, game_state) for move in possible_moves]
         moves = [x[1] for x in sorted(zip(scores, possible_moves), key=lambda tup: tup[0])]
@@ -91,9 +103,17 @@ class TreeNode:
         return moves[np.random.randint(len(moves))]
 
     def is_terminal_node(self):
+        """
+        Helper method used to determine if the current node is a terminal (leaf) node
+        @return: a boolean value (True if the current node is a leaf, False otherwise)
+        """
         return len(get_empty_cells(self.game_state)) == 0
 
     def rollout(self):
+        """
+        Method used to perform the roll-out (simulation) step of Monte Carlo Search Tree
+        @return: the accumulated scores of both players from the executed roll-out (simulation)
+        """
         # The simulation (rollout) starts one level below the current node (next move), therefore
         # we change the player flag to indicate that it is the next player's turn
         is_our_turn = not self.is_our_turn
@@ -126,6 +146,11 @@ class TreeNode:
         return rollout_game_state.scores
 
     def backpropagate(self, result):
+        """
+        Method used to perform the back-propagation step of Monte Carlo Search Tree
+        @param result: a list containing the accumulated scores (game points) of each player after
+        the execution of the roll-out (simulation) step.
+        """
         self.n_value += 1.
 
         # Check which player has the most turn wins based on the provided result
@@ -140,15 +165,28 @@ class TreeNode:
             self.parent_node.backpropagate(result)
 
     def is_fully_expanded(self):
+        """
+        Helper method used to check if the current node is fully expanded (has no unevaluated moves left)
+        @return: a boolean value (True if the node has no unevaluated moves left, False otherwise)
+        """
         return len(self.unevaluated_moves) == 0
 
     def get_best_child(self, c_param=2):
+        """
+        Method implementing the UCT formula to select and return the best child of the current node
+        @param c_param: a hyper-parameter used to tweak the formula's sensitivity/performance
+        @return: the best child node of the current node selected using the UCT formula
+        """
         choices_weights = [
             (c.get_q_value() / c.get_n_value()) + c_param * np.sqrt((2 * np.log(self.get_n_value()) / c.get_n_value()))
             for c in self.children_nodes]
         return self.children_nodes[np.argmax(choices_weights)]
 
     def select_rollout_node(self):
+        """
+        Method used to select the roll-out node i.e., the node where the simulation step will commence from.
+        @return: the selected roll-out node.
+        """
         current_node = self
 
         while not current_node.is_terminal_node():
@@ -189,6 +227,12 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
         return max_move
 
     def monte_carlo_tree_search(self, game_state: GameState, candidate_moves, num_simulations):
+        """
+        Helper method used to trigger the Monte Carlo Search Tree algorithm
+        @param game_state: the current state of the Competitive Sudoku game
+        @param candidate_moves: a list of "Move" objects containing all possible moves that should be processed
+        @param num_simulations: The number of simulation we want the Monte Carlo Search Tree algorithm to perform
+        """
         num_empty_cells = len(get_empty_cells(game_state))
         root_node = TreeNode(game_state, None, None, candidate_moves, num_empty_cells)
 
