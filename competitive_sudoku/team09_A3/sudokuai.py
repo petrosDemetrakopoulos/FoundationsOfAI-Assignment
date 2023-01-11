@@ -245,8 +245,14 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             self.propose_move(best_move)
 
     def get_skip_move(self, legal_moves: list, game_state: GameState):
+        """
+        Get a move that would make the Sudoku unsolvable, to use it to intentionally skip the agent's move
+        @param game_state: The GameState object that describes the current state of the game in progress
+        @param legal_moves: List of all legal moves that are available to the agent at the current state
+        @return: A Move object representing a move that makes the sudoku unsolvable. If such moves does not exists, return None
+        """
+
         # iterate rows to find potential move than can force the agent to "skip" the move
-        
         for i in range(game_state.board.N):
             available_moves_in_row = [move for move in legal_moves if move.i == i]
             available_cells_in_row = list(set([move.j for move in available_moves_in_row]))
@@ -261,7 +267,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             if non_ambiguous_value is not None:
                 # If a cell in the row can contain only a single value
                 # but another cell from the row can also have it
-                # then it means that putting it in the latter one will result in an unsolvable sudoku
+                # then it means that putting the value in the latter one will result in an unsolvable sudoku
                 # we want to propose that move in order to "skip" the turn
                 for col_index, moves_list in moves_per_cell.items():
                     if len(moves_list) > 1 and non_ambiguous_value in moves_list:
@@ -280,7 +286,7 @@ class SudokuAI(competitive_sudoku.sudokuai.SudokuAI):
             if non_ambiguous_value is not None:
                 # If a cell in the row can contain only a single value
                 # but another cell from the row can also have it
-                # then it means that putting it in the latter one will result in an unsolvable sudoku
+                # then it means that putting the value in the latter one will result in an unsolvable sudoku
                 # we want to propose that move in order to "skip" the turn
                 for row_index, moves_list in moves_per_cell.items():
                     if len(moves_list) > 1 and non_ambiguous_value in moves_list:
