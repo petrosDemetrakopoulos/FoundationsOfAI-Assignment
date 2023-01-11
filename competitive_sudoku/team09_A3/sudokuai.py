@@ -12,29 +12,43 @@ import competitive_sudoku.sudokuai
 # Implementation of MCTS is based on https://ai-boson.github.io/mcts/
 class TreeNode:
     def __init__(self, game_state: GameState, parent_node, parent_move, candidate_moves, num_empty_cells, is_our_turn=True):
-        self.game_state = game_state
-        self.parent_node = parent_node
-        self.parent_move = parent_move
-        self.children_nodes = []
-        self.candidate_moves = candidate_moves
-        self.num_empty_cells = num_empty_cells
-        self.is_our_turn = is_our_turn
+        self.game_state = game_state                # The current game state object
+        self.parent_node = parent_node              # The TreeNode object representing this node's parent node
+        self.parent_move = parent_move              # The move selected by the parent node of this node
+        self.children_nodes = []                    # The children nodes of this node
+        self.candidate_moves = candidate_moves      # All available moves provided as potential choices to this node
+        self.num_empty_cells = num_empty_cells      # The number of empty cells in the current game state
+        self.is_our_turn = is_our_turn              # Flag that indicates whether it is our agent's turn to play
 
-        self.n_value = 0  # Number of times the node has been visited
-        self.win_count = [0, 0]
-        self.unevaluated_moves = candidate_moves
+        self.n_value = 0                            # Number of times the node has been visited
+        self.win_count = [0, 0]                     # The win counts of both players
+                                                    # (index 0: Our agent, index 1: Opponent)
+        self.unevaluated_moves = candidate_moves    # A collection of moves that have not been evaluated
+                                                    # in terms of potential score yet
         return
 
     def get_q_value(self):
+        """
+        A getter function used to return the accumulated "q" (score) value of a node
+        @return: an integer representing the accumulated "q" value
+        """
         p1_wins = self.win_count[0]
         p1_loses = self.win_count[1]
 
         return p1_wins - p1_loses
 
     def get_n_value(self):
+        """
+        A getter function used to return the accumulated "n" (number of visits) value of a node
+        @return: an integer representing the "n" value
+        """
         return self.n_value
 
     def get_parent_move(self):
+        """
+        A getter function used to get the stored parent move of the current node.
+        @return: a Move object representing this node's parent move.
+        """
         return self.parent_move
 
     def expand_tree(self):
@@ -52,6 +66,7 @@ class TreeNode:
         new_game_state.board.put(new_move.i, new_move.j, new_move.value)  # Make the new move on the new game state
 
         updated_empty_cells = get_empty_cells(new_game_state)
+
         # Find any legal moves we can make at the current game_state
         updated_candidate_moves = legal_moves_after_pruning(new_game_state, updated_empty_cells)
 
@@ -62,7 +77,7 @@ class TreeNode:
 
         return child_node
 
-    def select_random_move(self, possible_moves, game_state):
+    def select_rollout_move(self, possible_moves, game_state):
         # Sort moves based on their score increase (moves leading to higher score first)
         scores = [evaluate_move_score_increase(move, game_state) for move in possible_moves]
         moves = [x[1] for x in sorted(zip(scores, possible_moves), key=lambda tup: tup[0])]
@@ -87,7 +102,7 @@ class TreeNode:
 
         while available_moves:
             # Select a random move from the available moves
-            selected_move = self.select_random_move(available_moves, game_state=rollout_game_state)
+            selected_move = self.select_rollout_move(available_moves, game_state=rollout_game_state)
 
             # Calculate the selected move's score
             selected_move_score = evaluate_move_score_increase(selected_move, rollout_game_state)
