@@ -3,9 +3,10 @@ import matplotlib.pyplot as plt
 
 categories = ['WINS', 'DRAWS','LOSES']
 
-data = {"7": [2,0,8],
-        "8.5": [4,0,6],
-        "10": [6,2,2]}
+data = {"0.1": [2,0,8],
+        "0.5": [4,0,6],
+        "1": [6,2,2],
+        "5": [6,2,2]}
 
 def plot_chart(results, category_names):
     labels = list(results.keys())
@@ -45,15 +46,10 @@ def plot_chart(results, category_names):
 
     ax.legend(ncol=len(category_names), bbox_to_anchor=(1, 1),
               loc='lower right', fontsize='medium')
-    ax.set_title('Agent vs Greedy Player on empty-4x4', fontsize=18)
+    ax.set_title('Agent A3 vs A2 (baseline) on empty-2x2', fontsize=18)
     ax.set_ylabel('Time limit', fontsize=18)
     ax.set_xlabel('Frequency of outcome')
     ax.set_yticklabels([7,8.5,10], fontsize=18)
     return fig, ax
 
 plot_chart(data, categories)
-
-def plot_line_chart():
-    
-
-plt.show()
