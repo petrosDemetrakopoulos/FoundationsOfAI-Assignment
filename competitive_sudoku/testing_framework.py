@@ -149,9 +149,9 @@ if __name__ == '__main__':
 
     test_files_paths = [test_files_root_path + "/" + file_name for file_name in test_files_names]
 
-    agent_1_name = "team09_A3"
+    agent_1_name = "team09_A2_skip"
     agent_2_name = "team09_A2"
-    time_options = [0.1, 0.5, 1,5]
+    time_options = [0.1,0.5,1,5]
 
     print(" \n     > Script Settings <")
     print("--------------------------------------------")
