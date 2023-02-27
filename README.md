@@ -2,6 +2,8 @@
 This repo hosts the assignments of the course "Foundations of AI" for group 09.
 The assignments are implementing 4 different adversary agents for the "Competitive Sudoku" (described below) game.
 
+This solution won the tournament that took place between the agents developed by all teams in the "Foundations of AI" course of the DS and AI Master's programme in 2023.
+
 ### Game description and rules
 (The followingg description and rules have been taken as-is from the relative course material file)  
   
